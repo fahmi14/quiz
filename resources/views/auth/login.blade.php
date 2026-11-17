@@ -43,7 +43,8 @@
                     <input type="text" 
                            id="email" 
                            name="email" 
-                           value="{{ old('email', 'admin@quiz.test') }}" 
+                           value="{{ old('email') }}" 
+                           placeholder="Masukkan email atau username Anda..."
                            required 
                            autofocus
                            class="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 bg-white/90 text-slate-800 text-xs sm:text-sm focus:outline-none focus:border-pastel-sage-400 focus:ring-4 focus:ring-pastel-sage-100 transition-all shadow-sm">
@@ -61,7 +62,7 @@
                     <input type="password" 
                            id="password" 
                            name="password" 
-                           value="password"
+                           placeholder="Masukkan kata sandi..."
                            required 
                            class="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 bg-white/90 text-slate-800 text-xs sm:text-sm focus:outline-none focus:border-pastel-sage-400 focus:ring-4 focus:ring-pastel-sage-100 transition-all shadow-sm">
                     <div class="absolute inset-y-0 right-3.5 flex items-center pointer-events-none text-slate-400">
@@ -75,7 +76,6 @@
                     <input type="checkbox" name="remember" class="w-4 h-4 rounded text-pastel-sage-500 border-slate-300 focus:ring-pastel-sage-300">
                     <span>Ingat Saya</span>
                 </label>
-                <span class="text-slate-400">Default: password</span>
             </div>
 
             <button type="submit" 

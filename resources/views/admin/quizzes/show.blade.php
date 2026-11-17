@@ -36,7 +36,7 @@
     <!-- Top Bar -->
     <div class="glass-card p-6 rounded-3xl shadow-soft flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-            <div class="flex items-center gap-2 mb-2">
+            <div class="flex items-center gap-2 mb-2 flex-wrap">
                 <a href="{{ route('quizzes.index') }}" class="text-xs font-semibold text-slate-400 hover:text-slate-700 transition-colors">
                     &larr; Kembali ke Daftar
                 </a>
@@ -44,6 +44,14 @@
                 <span class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-lg bg-pastel-sky-50 text-pastel-sky-600 border border-pastel-sky-200/60 font-mono font-bold text-xs">
                     KODE: {{ $quiz->code }}
                 </span>
+
+                <!-- Tombol Share Link Cepat di Halaman Detail -->
+                <button type="button" 
+                        onclick="copyShareLink('{{ route('student.join', $quiz->code) }}', '{{ addslashes($quiz->title) }}')"
+                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-pastel-sage-100/80 hover:bg-pastel-sage-200 text-pastel-sage-700 font-bold text-xs border border-pastel-sage-200 transition-all shadow-sm">
+                    <i data-lucide="share-2" class="w-3.5 h-3.5 text-pastel-sage-600"></i>
+                    <span>Salin Share Link Peserta</span>
+                </button>
             </div>
             <h1 class="font-display font-black text-2xl text-slate-800 tracking-tight">{{ $quiz->title }}</h1>
             <p class="text-xs text-slate-500 mt-1">{{ $quiz->description ?: 'Tidak ada deskripsi tambahan.' }}</p>
@@ -339,3 +347,36 @@
 
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    function copyShareLink(url, title) {
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(url).then(() => {
+                PastelDialog.alert({
+                    title: 'Link Berhasil Disalin! ✨',
+                    message: `Link langsung untuk kuis "${title}" telah disalin ke clipboard:\n\n${url}\n\nPeserta dapat langsung masuk & mengisi nama tanpa harus mengetik kode kuis.`,
+                    type: 'success'
+                });
+            }).catch(() => fallbackCopy(url, title));
+        } else {
+            fallbackCopy(url, title);
+        }
+    }
+
+    function fallbackCopy(url, title) {
+        const tempInput = document.createElement('input');
+        tempInput.value = url;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+
+        PastelDialog.alert({
+            title: 'Link Berhasil Disalin! ✨',
+            message: `Link langsung untuk kuis "${title}" telah disalin:\n\n${url}\n\nPeserta dapat langsung masuk tanpa input kode.`,
+            type: 'success'
+        });
+    }
+</script>
+@endpush

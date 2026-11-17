@@ -123,9 +123,20 @@
                                     <div class="font-bold text-slate-800 text-sm mb-1 hover:text-pastel-sage-600 transition-colors">
                                         <a href="{{ route('quizzes.show', $quiz) }}">{{ $quiz->title }}</a>
                                     </div>
-                                    <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-pastel-sky-50 text-pastel-sky-600 border border-pastel-sky-200/60 font-mono font-bold text-[11px]">
-                                        <i data-lucide="key" class="w-3 h-3"></i>
-                                        {{ $quiz->code }}
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-pastel-sky-50 text-pastel-sky-600 border border-pastel-sky-200/60 font-mono font-bold text-[11px]">
+                                            <i data-lucide="key" class="w-3 h-3"></i>
+                                            {{ $quiz->code }}
+                                        </div>
+
+                                        <!-- Tombol Salin Share Link -->
+                                        <button type="button" 
+                                                onclick="copyShareLink('{{ route('student.join', $quiz->code) }}', '{{ addslashes($quiz->title) }}')"
+                                                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-pastel-sage-600 hover:border-pastel-sage-300 font-semibold text-[11px] shadow-sm transition-all"
+                                                title="Salin Link Langsung Masuk (Tanpa Input Kode)">
+                                            <i data-lucide="share-2" class="w-3 h-3 text-pastel-sage-500"></i>
+                                            <span>Share Link</span>
+                                        </button>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4">
@@ -232,3 +243,36 @@
 
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    function copyShareLink(url, title) {
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(url).then(() => {
+                PastelDialog.alert({
+                    title: 'Link Berhasil Disalin! ✨',
+                    message: `Link langsung untuk kuis "${title}" telah disalin ke clipboard:\n\n${url}\n\nPeserta dapat langsung mengisi nama tanpa harus mengetik kode kuis.`,
+                    type: 'success'
+                });
+            }).catch(() => fallbackCopy(url, title));
+        } else {
+            fallbackCopy(url, title);
+        }
+    }
+
+    function fallbackCopy(url, title) {
+        const tempInput = document.createElement('input');
+        tempInput.value = url;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+
+        PastelDialog.alert({
+            title: 'Link Berhasil Disalin! ✨',
+            message: `Link langsung untuk kuis "${title}" telah disalin:\n\n${url}\n\nPeserta dapat langsung masuk tanpa input kode.`,
+            type: 'success'
+        });
+    }
+</script>
+@endpush
