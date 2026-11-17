@@ -15,13 +15,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->enum('role', ['admin', 'pimpinan', 'katim', 'keuangan', 'organik', 'mitra'])->default('organik');
-            $table->enum('tipe', ['organik', 'mitra'])->default('organik');
-            $table->string('nip', 30)->nullable()->index();
-            $table->string('id_sobat', 30)->nullable()->index();
-            $table->string('jabatan')->nullable();
-            $table->string('no_hp', 30)->nullable();
-            $table->integer('kapasitas_maks')->default(100);
+            $table->string('role')->default('admin');
             $table->rememberToken();
             $table->timestamps();
         });
