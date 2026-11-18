@@ -91,6 +91,23 @@
                     </div>
                 </div>
 
+                <!-- Jumlah Pilihan Ganda -->
+                <div>
+                    <label for="options_count" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5 flex items-center justify-between">
+                        <span>Jumlah Pilihan Ganda <span class="text-rose-500">*</span></span>
+                        <span class="text-[10px] text-pastel-sage-600 font-semibold" x-text="optionsCount + ' Pilihan (A - ' + letters[optionsCount - 1] + ')'"></span>
+                    </label>
+                    <select id="options_count" 
+                            name="options_count" 
+                            x-model.number="optionsCount"
+                            required
+                            class="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 text-xs sm:text-sm font-semibold focus:outline-none focus:border-pastel-sage-400 focus:ring-4 focus:ring-pastel-sage-100 transition-all shadow-sm">
+                        <template x-for="n in 19" :key="n + 1">
+                            <option :value="n + 1" :selected="optionsCount === (n + 1)" x-text="(n + 1) + ' Pilihan (A s/d ' + letters[n] + ')'"></option>
+                        </template>
+                    </select>
+                </div>
+
                 <div class="md:col-span-2">
                     <label for="description" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
                         Deskripsi / Petunjuk untuk Peserta (Opsional)
@@ -206,6 +223,8 @@
 <script>
     function quizEditor() {
         return {
+            optionsCount: {{ old('options_count', $quiz->options_count ?: 5) }},
+            letters: ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T'],
             shuffleQuestions: {{ old('shuffle_questions', $quiz->shuffle_questions) ? 'true' : 'false' }},
             shuffleOptions: {{ old('shuffle_options', $quiz->shuffle_options) ? 'true' : 'false' }},
 

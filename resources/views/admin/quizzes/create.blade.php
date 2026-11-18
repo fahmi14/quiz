@@ -86,6 +86,27 @@
                     </div>
                 </div>
 
+                <!-- Custom Jumlah Pilihan Ganda (2 s/d 20) -->
+                <div>
+                    <label for="options_count" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5 flex items-center justify-between">
+                        <span>Jumlah Pilihan Ganda <span class="text-rose-500">*</span></span>
+                        <span class="text-[10px] text-pastel-sage-600 font-semibold" x-text="optionsCount + ' Pilihan (A - ' + letters[optionsCount - 1] + ')'"></span>
+                    </label>
+                    <div class="relative">
+                        <select id="options_count" 
+                                name="options_count" 
+                                x-model.number="optionsCount"
+                                @change="onOptionsCountChange()"
+                                required
+                                class="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 text-xs sm:text-sm font-semibold focus:outline-none focus:border-pastel-sage-400 focus:ring-4 focus:ring-pastel-sage-100 transition-all shadow-sm">
+                            <template x-for="n in 19" :key="n + 1">
+                                <option :value="n + 1" :selected="optionsCount === (n + 1)" x-text="(n + 1) + ' Pilihan (A s/d ' + letters[n] + ')'"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-1">Dapat disesuaikan bebas antara 2 hingga 20 opsi jawaban.</p>
+                </div>
+
                 <!-- Masa Aktif -->
                 <div>
                     <label for="starts_at" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
@@ -165,12 +186,15 @@
                     <span class="w-6 h-6 rounded-lg bg-pastel-amber-200 text-pastel-amber-800 text-xs font-bold flex items-center justify-center">3</span>
                     Import Template Excel & Mapping Kolom
                 </h3>
-                <a href="{{ route('quizzes.download-template') }}" 
-                   class="text-xs text-pastel-sage-600 hover:text-pastel-sage-700 font-semibold inline-flex items-center gap-1.5">
-                    <i data-lucide="download" class="w-3.5 h-3.5"></i> Unduh Format Excel Resmi
+                <a :href="'{{ route('quizzes.download-template') }}?options_count=' + optionsCount" 
+                   class="px-3.5 py-1.5 rounded-xl bg-pastel-sage-100/80 hover:bg-pastel-sage-200/80 border border-pastel-sage-300 text-xs text-pastel-sage-700 font-semibold inline-flex items-center gap-1.5 shadow-xs transition-all">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i> 
+                    <span>Unduh Template Excel (<span x-text="optionsCount"></span> Pilihan)</span>
                 </a>
             </div>
-            <p class="text-xs text-slate-500 mb-5">Unggah file Excel (.xlsx / .csv), lalu tentukan kolom soal, pilihan jawaban (A-E), dan kunci jawaban.</p>
+            <p class="text-xs text-slate-500 mb-5">
+                Unggah file Excel (.xlsx / .csv), lalu tentukan kolom soal, pilihan jawaban (A s/d <span x-text="letters[optionsCount - 1]"></span>), dan kunci jawaban.
+            </p>
 
             <!-- File Upload Dropzone -->
             <div class="border-2 border-dashed rounded-3xl p-6 text-center transition-all"
@@ -235,7 +259,9 @@
 
                     <!-- Kunci Jawaban -->
                     <div>
-                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Kolom Kunci Jawaban <span class="text-rose-500">*</span></label>
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">
+                            Kolom Kunci Jawaban (A-<span x-text="letters[optionsCount - 1]"></span>) <span class="text-rose-500">*</span>
+                        </label>
                         <select name="col_key" x-model="mapping.key" class="w-full text-xs p-2.5 rounded-xl border border-slate-200 bg-white">
                             <template x-for="(label, col) in availableHeaders" :key="col">
                                 <option :value="col" x-text="col + ': ' + label"></option>
@@ -254,58 +280,23 @@
                         </select>
                     </div>
 
-                    <!-- Pilihan A -->
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Kolom Pilihan A <span class="text-rose-500">*</span></label>
-                        <select name="col_opt_a" x-model="mapping.opt_a" class="w-full text-xs p-2.5 rounded-xl border border-slate-200 bg-white">
-                            <template x-for="(label, col) in availableHeaders" :key="col">
-                                <option :value="col" x-text="col + ': ' + label"></option>
-                            </template>
-                        </select>
-                    </div>
-
-                    <!-- Pilihan B -->
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Kolom Pilihan B <span class="text-rose-500">*</span></label>
-                        <select name="col_opt_b" x-model="mapping.opt_b" class="w-full text-xs p-2.5 rounded-xl border border-slate-200 bg-white">
-                            <template x-for="(label, col) in availableHeaders" :key="col">
-                                <option :value="col" x-text="col + ': ' + label"></option>
-                            </template>
-                        </select>
-                    </div>
-
-                    <!-- Pilihan C -->
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Kolom Pilihan C</label>
-                        <select name="col_opt_c" x-model="mapping.opt_c" class="w-full text-xs p-2.5 rounded-xl border border-slate-200 bg-white">
-                            <option value="">-- Kosong --</option>
-                            <template x-for="(label, col) in availableHeaders" :key="col">
-                                <option :value="col" x-text="col + ': ' + label"></option>
-                            </template>
-                        </select>
-                    </div>
-
-                    <!-- Pilihan D -->
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Kolom Pilihan D</label>
-                        <select name="col_opt_d" x-model="mapping.opt_d" class="w-full text-xs p-2.5 rounded-xl border border-slate-200 bg-white">
-                            <option value="">-- Kosong --</option>
-                            <template x-for="(label, col) in availableHeaders" :key="col">
-                                <option :value="col" x-text="col + ': ' + label"></option>
-                            </template>
-                        </select>
-                    </div>
-
-                    <!-- Pilihan E -->
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Kolom Pilihan E</label>
-                        <select name="col_opt_e" x-model="mapping.opt_e" class="w-full text-xs p-2.5 rounded-xl border border-slate-200 bg-white">
-                            <option value="">-- Kosong --</option>
-                            <template x-for="(label, col) in availableHeaders" :key="col">
-                                <option :value="col" x-text="col + ': ' + label"></option>
-                            </template>
-                        </select>
-                    </div>
+                    <!-- Pilihan Ganda Dinamis Sesuai Jumlah Opsi (2 s/d 20) -->
+                    <template x-for="idx in optionsCount" :key="idx">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">
+                                Kolom Pilihan <span x-text="letters[idx - 1]"></span>
+                                <span class="text-rose-500" x-show="idx <= 2">*</span>
+                            </label>
+                            <select :name="'col_opt_' + letters[idx - 1].toLowerCase()" 
+                                    x-model="mapping['opt_' + letters[idx - 1].toLowerCase()]" 
+                                    class="w-full text-xs p-2.5 rounded-xl border border-slate-200 bg-white">
+                                <option value="" x-show="idx > 2">-- Kosong --</option>
+                                <template x-for="(label, col) in availableHeaders" :key="col">
+                                    <option :value="col" x-text="col + ': ' + label"></option>
+                                </template>
+                            </select>
+                        </div>
+                    </template>
 
                 </div>
 
@@ -359,6 +350,8 @@
 <script>
     function quizCreator() {
         return {
+            optionsCount: {{ old('options_count', 5) }},
+            letters: ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T'],
             shuffleQuestions: {{ old('shuffle_questions') ? 'true' : 'false' }},
             shuffleOptions: {{ old('shuffle_options') ? 'true' : 'false' }},
             isUploading: false,
@@ -376,6 +369,56 @@
                 opt_e: 'F',
                 key: 'G',
                 points: 'H'
+            },
+
+            init() {
+                this.initDefaultMapping();
+            },
+
+            onOptionsCountChange() {
+                if (Object.keys(this.availableHeaders).length > 0) {
+                    this.autoAssignMapping();
+                } else {
+                    this.initDefaultMapping();
+                }
+                this.$nextTick(() => lucide.createIcons());
+            },
+
+            initDefaultMapping() {
+                const map = {
+                    question: 'A',
+                    key: '',
+                    points: ''
+                };
+                for (let i = 0; i < this.optionsCount; i++) {
+                    const colLetter = String.fromCharCode(66 + i); // 66 = B
+                    const optKey = this.letters[i].toLowerCase();
+                    map['opt_' + optKey] = colLetter;
+                }
+                map.key = String.fromCharCode(66 + this.optionsCount);
+                map.points = String.fromCharCode(66 + this.optionsCount + 1);
+                this.mapping = map;
+            },
+
+            autoAssignMapping() {
+                const keys = Object.keys(this.availableHeaders);
+                if (keys.length === 0) return;
+
+                const map = {
+                    question: keys[0] || 'A',
+                    key: '',
+                    points: ''
+                };
+
+                for (let i = 0; i < this.optionsCount; i++) {
+                    const optKey = this.letters[i].toLowerCase();
+                    map['opt_' + optKey] = keys[i + 1] || '';
+                }
+
+                // Kolom kunci & poin
+                map.key = keys[this.optionsCount + 1] || '';
+                map.points = keys[this.optionsCount + 2] || '';
+                this.mapping = map;
             },
 
             generateNewCode() {
@@ -412,18 +455,8 @@
                         this.previewRows = data.preview_rows;
                         this.totalRows = data.total_rows;
 
-                        // Auto-assign sensible mapping if columns match
-                        const keys = Object.keys(data.headers);
-                        if (keys.length >= 7) {
-                            this.mapping.question = keys[0];
-                            this.mapping.opt_a = keys[1];
-                            this.mapping.opt_b = keys[2];
-                            this.mapping.opt_c = keys[3];
-                            this.mapping.opt_d = keys[4];
-                            this.mapping.opt_e = keys[5] || '';
-                            this.mapping.key = keys[6];
-                            this.mapping.points = keys[7] || '';
-                        }
+                        this.autoAssignMapping();
+                        this.$nextTick(() => lucide.createIcons());
                     } else {
                         alert(data.message || 'Gagal membaca file Excel.');
                     }

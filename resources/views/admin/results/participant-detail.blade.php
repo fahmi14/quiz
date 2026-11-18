@@ -84,9 +84,9 @@
                     </div>
                 </div>
 
-                <!-- Options -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-2 pl-9">
-                    @foreach(['A' => $q->option_a, 'B' => $q->option_b, 'C' => $q->option_c, 'D' => $q->option_d, 'E' => $q->option_e] as $k => $val)
+                <!-- Options (Dinamis 2 - 20 Pilihan) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs pt-2 pl-9">
+                    @foreach($q->getAllOptions() as $k => $val)
                         @if(!empty($val))
                             @php
                                 $isChosen = ($selected === $k);

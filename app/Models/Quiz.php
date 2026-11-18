@@ -16,6 +16,7 @@ class Quiz extends Model
         'starts_at',
         'expires_at',
         'duration_minutes',
+        'options_count',
         'shuffle_questions',
         'shuffle_options',
         'is_active',
@@ -25,6 +26,8 @@ class Quiz extends Model
     protected $casts = [
         'starts_at' => 'datetime',
         'expires_at' => 'datetime',
+        'duration_minutes' => 'integer',
+        'options_count' => 'integer',
         'shuffle_questions' => 'boolean',
         'shuffle_options' => 'boolean',
         'is_active' => 'boolean',

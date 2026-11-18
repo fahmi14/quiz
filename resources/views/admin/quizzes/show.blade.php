@@ -6,26 +6,32 @@
 <div class="space-y-6 animate-slide-up" x-data="{ 
     showAddQuestionModal: false, 
     showEditQuestionModal: false,
+    optionsCount: {{ $quiz->options_count ?: 5 }},
+    letters: ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T'],
     editQuestionData: {
         id: '',
         question_text: '',
-        option_a: '',
-        option_b: '',
-        option_c: '',
-        option_d: '',
-        option_e: '',
+        options: {},
         correct_answer: 'A',
         points: 10
     },
     openEditModal(q) {
+        const opts = {};
+        for (let i = 0; i < this.optionsCount; i++) {
+            const letter = this.letters[i];
+            const prop = 'option_' + letter.toLowerCase();
+            if (q.options_data && q.options_data[letter] !== undefined) {
+                opts[letter] = q.options_data[letter];
+            } else if (q[prop] !== undefined) {
+                opts[letter] = q[prop] || '';
+            } else {
+                opts[letter] = '';
+            }
+        }
         this.editQuestionData = {
             id: q.id,
             question_text: q.question_text,
-            option_a: q.option_a || '',
-            option_b: q.option_b || '',
-            option_c: q.option_c || '',
-            option_d: q.option_d || '',
-            option_e: q.option_e || '',
+            options: opts,
             correct_answer: (q.correct_answer || 'A').toUpperCase(),
             points: q.points || 10
         };
@@ -176,9 +182,9 @@
                             </div>
                         </div>
 
-                        <!-- Options grid -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-2 pl-9">
-                            @foreach(['A' => $q->option_a, 'B' => $q->option_b, 'C' => $q->option_c, 'D' => $q->option_d, 'E' => $q->option_e] as $key => $optVal)
+                        <!-- Options grid (Dinamis 2 - 20 Pilihan) -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs pt-2 pl-9">
+                            @foreach($q->getAllOptions() as $key => $optVal)
                                 @if(!empty($optVal))
                                     <div class="p-2.5 rounded-xl border flex items-center gap-2 {{ strtoupper($q->correct_answer) === $key ? 'bg-emerald-50/80 border-emerald-300 text-emerald-900 font-medium' : 'bg-slate-50/50 border-slate-200/60 text-slate-600' }}">
                                         <span class="w-5 h-5 rounded-md text-[10px] font-bold flex items-center justify-center {{ strtoupper($q->correct_answer) === $key ? 'bg-emerald-500 text-white' : 'bg-white text-slate-400 border border-slate-200' }}">
@@ -200,16 +206,19 @@
         @endif
     </div>
 
-    <!-- Modal Tambah Soal Manual -->
+    <!-- Modal Tambah Soal Manual (Dinamis 2 - 20 Pilihan) -->
     <div x-show="showAddQuestionModal" 
          x-transition.opacity 
          class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
         
-        <div class="glass-card rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-soft-lg border border-white"
+        <div class="glass-card rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-soft-lg border border-white max-h-[90vh] overflow-y-auto"
              @click.away="showAddQuestionModal = false">
             
             <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-                <h3 class="font-display font-bold text-base text-slate-800">Tambah Butir Soal Baru</h3>
+                <div>
+                    <h3 class="font-display font-bold text-base text-slate-800">Tambah Butir Soal Baru</h3>
+                    <p class="text-[11px] text-pastel-sage-600 font-medium">Format kuis ini: <span x-text="optionsCount"></span> Pilihan Ganda (A s/d <span x-text="letters[optionsCount - 1]"></span>)</p>
+                </div>
                 <button type="button" @click="showAddQuestionModal = false" class="text-slate-400 hover:text-slate-700">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
@@ -223,38 +232,30 @@
                     <textarea name="question_text" rows="2" required placeholder="Tuliskan teks pertanyaan soal..." class="w-full text-xs p-3 rounded-xl border border-slate-200"></textarea>
                 </div>
 
-                <div class="grid grid-cols-2 gap-2.5">
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Pilihan A <span class="text-rose-500">*</span></label>
-                        <input type="text" name="option_a" required class="w-full text-xs p-2 rounded-xl border border-slate-200">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Pilihan B <span class="text-rose-500">*</span></label>
-                        <input type="text" name="option_b" required class="w-full text-xs p-2 rounded-xl border border-slate-200">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Pilihan C</label>
-                        <input type="text" name="option_c" class="w-full text-xs p-2 rounded-xl border border-slate-200">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Pilihan D</label>
-                        <input type="text" name="option_d" class="w-full text-xs p-2 rounded-xl border border-slate-200">
-                    </div>
-                    <div class="col-span-2">
-                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Pilihan E</label>
-                        <input type="text" name="option_e" class="w-full text-xs p-2 rounded-xl border border-slate-200">
-                    </div>
+                <!-- Input Pilihan Ganda Dinamis -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-60 overflow-y-auto p-1">
+                    <template x-for="idx in optionsCount" :key="idx">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">
+                                Pilihan <span x-text="letters[idx - 1]"></span>
+                                <span class="text-rose-500" x-show="idx <= 2">*</span>
+                            </label>
+                            <input type="text" 
+                                   :name="'option_' + letters[idx - 1].toLowerCase()" 
+                                   :required="idx <= 2"
+                                   :placeholder="'Teks opsi ' + letters[idx - 1]"
+                                   class="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:border-pastel-sage-400 focus:outline-none">
+                        </div>
+                    </template>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3 pt-2">
                     <div>
                         <label class="block text-xs font-bold text-slate-600 mb-1">Kunci Jawaban <span class="text-rose-500">*</span></label>
                         <select name="correct_answer" required class="w-full text-xs p-2.5 rounded-xl border border-slate-200 font-bold bg-white">
-                            <option value="A">Pilihan A</option>
-                            <option value="B">Pilihan B</option>
-                            <option value="C">Pilihan C</option>
-                            <option value="D">Pilihan D</option>
-                            <option value="E">Pilihan E</option>
+                            <template x-for="idx in optionsCount" :key="idx">
+                                <option :value="letters[idx - 1]" x-text="'Pilihan ' + letters[idx - 1]"></option>
+                            </template>
                         </select>
                     </div>
                     <div>
@@ -263,7 +264,7 @@
                     </div>
                 </div>
 
-                <div class="flex items-center justify-end gap-2 pt-4">
+                <div class="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
                     <button type="button" @click="showAddQuestionModal = false" class="px-4 py-2 rounded-xl border text-xs text-slate-600">Batal</button>
                     <button type="submit" class="px-5 py-2 rounded-xl bg-pastel-sage-500 text-white text-xs font-semibold">Simpan Soal</button>
                 </div>
@@ -272,16 +273,19 @@
         </div>
     </div>
 
-    <!-- Modal Edit Soal -->
+    <!-- Modal Edit Soal (Dinamis 2 - 20 Pilihan) -->
     <div x-show="showEditQuestionModal" 
          x-transition.opacity 
          class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
         
-        <div class="glass-card rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-soft-lg border border-white"
+        <div class="glass-card rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-soft-lg border border-white max-h-[90vh] overflow-y-auto"
              @click.away="showEditQuestionModal = false">
             
             <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-                <h3 class="font-display font-bold text-base text-slate-800">Edit Butir Soal</h3>
+                <div>
+                    <h3 class="font-display font-bold text-base text-slate-800">Edit Butir Soal</h3>
+                    <p class="text-[11px] text-pastel-sage-600 font-medium">Format kuis: <span x-text="optionsCount"></span> Pilihan (A s/d <span x-text="letters[optionsCount - 1]"></span>)</p>
+                </div>
                 <button type="button" @click="showEditQuestionModal = false" class="text-slate-400 hover:text-slate-700">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
@@ -296,38 +300,31 @@
                     <textarea name="question_text" rows="2" required x-model="editQuestionData.question_text" class="w-full text-xs p-3 rounded-xl border border-slate-200"></textarea>
                 </div>
 
-                <div class="grid grid-cols-2 gap-2.5">
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Pilihan A <span class="text-rose-500">*</span></label>
-                        <input type="text" name="option_a" required x-model="editQuestionData.option_a" class="w-full text-xs p-2 rounded-xl border border-slate-200">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Pilihan B <span class="text-rose-500">*</span></label>
-                        <input type="text" name="option_b" required x-model="editQuestionData.option_b" class="w-full text-xs p-2 rounded-xl border border-slate-200">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Pilihan C</label>
-                        <input type="text" name="option_c" x-model="editQuestionData.option_c" class="w-full text-xs p-2 rounded-xl border border-slate-200">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Pilihan D</label>
-                        <input type="text" name="option_d" x-model="editQuestionData.option_d" class="w-full text-xs p-2 rounded-xl border border-slate-200">
-                    </div>
-                    <div class="col-span-2">
-                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Pilihan E</label>
-                        <input type="text" name="option_e" x-model="editQuestionData.option_e" class="w-full text-xs p-2 rounded-xl border border-slate-200">
-                    </div>
+                <!-- Input Edit Pilihan Ganda Dinamis -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-60 overflow-y-auto p-1">
+                    <template x-for="idx in optionsCount" :key="idx">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">
+                                Pilihan <span x-text="letters[idx - 1]"></span>
+                                <span class="text-rose-500" x-show="idx <= 2">*</span>
+                            </label>
+                            <input type="text" 
+                                   :name="'option_' + letters[idx - 1].toLowerCase()" 
+                                   :required="idx <= 2"
+                                   x-model="editQuestionData.options[letters[idx - 1]]"
+                                   :placeholder="'Teks opsi ' + letters[idx - 1]"
+                                   class="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:border-pastel-sage-400 focus:outline-none">
+                        </div>
+                    </template>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3 pt-2">
                     <div>
                         <label class="block text-xs font-bold text-slate-600 mb-1">Kunci Jawaban <span class="text-rose-500">*</span></label>
                         <select name="correct_answer" required x-model="editQuestionData.correct_answer" class="w-full text-xs p-2.5 rounded-xl border border-slate-200 font-bold bg-white">
-                            <option value="A">Pilihan A</option>
-                            <option value="B">Pilihan B</option>
-                            <option value="C">Pilihan C</option>
-                            <option value="D">Pilihan D</option>
-                            <option value="E">Pilihan E</option>
+                            <template x-for="idx in optionsCount" :key="idx">
+                                <option :value="letters[idx - 1]" x-text="'Pilihan ' + letters[idx - 1]"></option>
+                            </template>
                         </select>
                     </div>
                     <div>
@@ -336,7 +333,7 @@
                     </div>
                 </div>
 
-                <div class="flex items-center justify-end gap-2 pt-4">
+                <div class="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
                     <button type="button" @click="showEditQuestionModal = false" class="px-4 py-2 rounded-xl border text-xs text-slate-600">Batal</button>
                     <button type="submit" class="px-5 py-2 rounded-xl bg-pastel-sage-500 text-white text-xs font-semibold">Simpan Perubahan Soal</button>
                 </div>

@@ -96,15 +96,9 @@ class StudentQuizController extends Controller
         $optionOrders = [];
         if ($quiz->shuffle_options) {
             foreach ($questions as $q) {
-                // Kumpulkan opsi yang tersedia
-                $opts = [];
-                foreach (['A', 'B', 'C', 'D', 'E'] as $k) {
-                    $prop = 'option_' . strtolower($k);
-                    if (!empty($q->$prop)) {
-                        $opts[] = $k;
-                    }
-                }
-                $shuffled = $opts;
+                // Kumpulkan opsi yang tersedia (mendukung dinamis 2-20 opsi)
+                $availableOpts = array_keys($q->getAllOptions());
+                $shuffled = $availableOpts;
                 shuffle($shuffled);
                 $optionOrders[$q->id] = $shuffled;
             }
@@ -167,20 +161,21 @@ class StudentQuizController extends Controller
                 $q = $allQuestions[$id];
                 $existingAnswer = $participant->answers->firstWhere('question_id', $id);
 
-                // Siapkan urutan opsi untuk peserta
+                // Siapkan urutan opsi untuk peserta (mendukung dinamis 2-20 opsi)
                 $displayOptions = [];
-                $customOrder = $optionOrders[$id] ?? ['A', 'B', 'C', 'D', 'E'];
+                $qAllOptions = $q->getAllOptions();
+                $allKeys = array_keys($qAllOptions);
+                $customOrder = $optionOrders[$id] ?? $allKeys;
 
                 // Buat mapping tombol (A, B, C, ...) ke isi opsi asli
-                $posLetters = ['A', 'B', 'C', 'D', 'E'];
+                $posLetters = range('A', 'T');
                 $btnIdx = 0;
                 foreach ($customOrder as $origKey) {
-                    $prop = 'option_' . strtolower($origKey);
-                    if (!empty($q->$prop)) {
+                    if (isset($qAllOptions[$origKey])) {
                         $displayOptions[] = [
                             'display_label' => $posLetters[$btnIdx] ?? $origKey,
                             'original_key' => $origKey,
-                            'text' => $q->$prop,
+                            'text' => $qAllOptions[$origKey],
                         ];
                         $btnIdx++;
                     }
@@ -219,7 +214,7 @@ class StudentQuizController extends Controller
 
         $request->validate([
             'question_id' => 'required|exists:questions,id',
-            'selected_option' => 'required|string|max:5',
+            'selected_option' => 'required|string|max:10',
         ]);
 
         $question = Question::findOrFail($request->input('question_id'));

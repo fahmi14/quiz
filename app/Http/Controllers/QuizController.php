@@ -88,12 +88,15 @@ class QuizController extends Controller
     }
 
     /**
-     * Unduh template excel untuk quiz.
+     * Unduh template excel untuk quiz, menyesuaikan jumlah opsi pilihan ganda (2 s/d 20).
      */
-    public function downloadTemplate()
+    public function downloadTemplate(Request $request)
     {
-        $path = $this->excelService->generateTemplate();
-        return response()->download($path, 'Template_Soal_Kuis.xlsx')->deleteFileAfterSend(true);
+        $optionsCount = (int) $request->input('options_count', 5);
+        $optionsCount = max(2, min(20, $optionsCount));
+        $path = $this->excelService->generateTemplate($optionsCount);
+        $fileName = "Template_Soal_Kuis_{$optionsCount}_Pilihan.xlsx";
+        return response()->download($path, $fileName)->deleteFileAfterSend(true);
     }
 
     /**
@@ -108,6 +111,7 @@ class QuizController extends Controller
             'starts_at' => 'nullable|date',
             'expires_at' => 'nullable|date|after_or_equal:starts_at',
             'duration_minutes' => 'required|integer|min:1|max:360',
+            'options_count' => 'required|integer|min:2|max:20',
             'shuffle_questions' => 'nullable|boolean',
             'shuffle_options' => 'nullable|boolean',
             'is_active' => 'nullable|boolean',
@@ -115,11 +119,6 @@ class QuizController extends Controller
             // File & Mapping (jika import Excel)
             'import_file_path' => 'nullable|string',
             'col_question' => 'nullable|string',
-            'col_opt_a' => 'nullable|string',
-            'col_opt_b' => 'nullable|string',
-            'col_opt_c' => 'nullable|string',
-            'col_opt_d' => 'nullable|string',
-            'col_opt_e' => 'nullable|string',
             'col_key' => 'nullable|string',
             'col_points' => 'nullable|string',
 
@@ -136,6 +135,7 @@ class QuizController extends Controller
                 'starts_at' => $validated['starts_at'] ?? null,
                 'expires_at' => $validated['expires_at'] ?? null,
                 'duration_minutes' => $validated['duration_minutes'],
+                'options_count' => (int) $validated['options_count'],
                 'shuffle_questions' => $request->boolean('shuffle_questions'),
                 'shuffle_options' => $request->boolean('shuffle_options'),
                 'is_active' => $request->has('is_active') ? $request->boolean('is_active') : true,
@@ -148,14 +148,19 @@ class QuizController extends Controller
                 if (file_exists($fullPath)) {
                     $mapping = [
                         'question_col' => $validated['col_question'],
-                        'opt_a_col' => $validated['col_opt_a'] ?? 'B',
-                        'opt_b_col' => $validated['col_opt_b'] ?? 'C',
-                        'opt_c_col' => $validated['col_opt_c'] ?? null,
-                        'opt_d_col' => $validated['col_opt_d'] ?? null,
-                        'opt_e_col' => $validated['col_opt_e'] ?? null,
-                        'key_col' => $validated['col_key'] ?? 'G',
-                        'points_col' => $validated['col_points'] ?? null,
+                        'key_col' => $request->input('col_key', 'G'),
+                        'points_col' => $request->input('col_points', null),
                     ];
+
+                    // Masukkan mapping dinamis untuk opsi A s/d T
+                    $letters = range('A', 'T');
+                    for ($i = 0; $i < $quiz->options_count; $i++) {
+                        $letter = $letters[$i];
+                        $colInput = $request->input('col_opt_' . strtolower($letter));
+                        if ($colInput) {
+                            $mapping['opt_' . strtolower($letter) . '_col'] = $colInput;
+                        }
+                    }
 
                     $parsed = $this->excelService->parseQuestionsWithMapping($fullPath, $mapping);
                     foreach ($parsed as $idx => $qData) {
@@ -175,15 +180,26 @@ class QuizController extends Controller
                 $startOrder = $quiz->questions()->count() + 1;
                 foreach ($validated['manual_questions'] as $mQ) {
                     if (!empty($mQ['question_text'])) {
+                        $optsData = [];
+                        $letters = range('A', 'T');
+                        for ($i = 0; $i < $quiz->options_count; $i++) {
+                            $let = $letters[$i];
+                            $keyName = 'option_' . strtolower($let);
+                            if (isset($mQ[$keyName]) && trim($mQ[$keyName]) !== '') {
+                                $optsData[$let] = $mQ[$keyName];
+                            }
+                        }
+
                         Question::create([
                             'quiz_id' => $quiz->id,
                             'order_num' => $startOrder++,
                             'question_text' => $mQ['question_text'],
-                            'option_a' => $mQ['option_a'] ?? null,
-                            'option_b' => $mQ['option_b'] ?? null,
-                            'option_c' => $mQ['option_c'] ?? null,
-                            'option_d' => $mQ['option_d'] ?? null,
-                            'option_e' => $mQ['option_e'] ?? null,
+                            'option_a' => $optsData['A'] ?? null,
+                            'option_b' => $optsData['B'] ?? null,
+                            'option_c' => $optsData['C'] ?? null,
+                            'option_d' => $optsData['D'] ?? null,
+                            'option_e' => $optsData['E'] ?? null,
+                            'options_data' => $optsData,
                             'correct_answer' => strtoupper($mQ['correct_answer'] ?? 'A'),
                             'points' => (int) ($mQ['points'] ?? 10),
                         ]);
@@ -198,6 +214,8 @@ class QuizController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withInput()->with('error', 'Gagal membuat kuis: ' . $e->getMessage());
+        }
+    }
         }
     }
 
@@ -234,6 +252,7 @@ class QuizController extends Controller
             'starts_at' => 'nullable|date',
             'expires_at' => 'nullable|date|after_or_equal:starts_at',
             'duration_minutes' => 'required|integer|min:1|max:360',
+            'options_count' => 'required|integer|min:2|max:20',
             'shuffle_questions' => 'nullable|boolean',
             'shuffle_options' => 'nullable|boolean',
             'is_active' => 'nullable|boolean',
@@ -246,6 +265,7 @@ class QuizController extends Controller
             'starts_at' => $validated['starts_at'] ?? null,
             'expires_at' => $validated['expires_at'] ?? null,
             'duration_minutes' => $validated['duration_minutes'],
+            'options_count' => (int) $validated['options_count'],
             'shuffle_questions' => $request->boolean('shuffle_questions'),
             'shuffle_options' => $request->boolean('shuffle_options'),
             'is_active' => $request->has('is_active') ? $request->boolean('is_active') : true,
@@ -256,26 +276,46 @@ class QuizController extends Controller
     }
 
     /**
-     * Tambah soal manual ke kuis yang sudah ada.
+     * Tambah soal manual ke kuis yang sudah ada (dukung 2-20 opsi).
      */
     public function addQuestion(Request $request, Quiz $quiz)
     {
+        $optsCount = $quiz->options_count ?: 5;
+        $letters = range('A', 'T');
+        $validKeys = array_slice($letters, 0, $optsCount);
+
         $validated = $request->validate([
             'question_text' => 'required|string',
-            'option_a' => 'required|string',
-            'option_b' => 'required|string',
-            'option_c' => 'nullable|string',
-            'option_d' => 'nullable|string',
-            'option_e' => 'nullable|string',
-            'correct_answer' => 'required|in:A,B,C,D,E',
+            'correct_answer' => 'required|in:' . implode(',', $validKeys),
             'points' => 'required|integer|min:1',
         ]);
 
+        $optsData = [];
+        for ($i = 0; $i < $optsCount; $i++) {
+            $letter = $letters[$i];
+            $val = $request->input('option_' . strtolower($letter));
+            if ($i < 2 && empty($val)) {
+                return back()->withInput()->with('error', "Pilihan $letter wajib diisi minimal 2 pilihan teratas.");
+            }
+            if ($val !== null && trim($val) !== '') {
+                $optsData[$letter] = $val;
+            }
+        }
+
         $nextOrder = $quiz->questions()->max('order_num') + 1;
 
-        $quiz->questions()->create(array_merge($validated, [
+        $quiz->questions()->create([
             'order_num' => $nextOrder,
-        ]));
+            'question_text' => $validated['question_text'],
+            'option_a' => $optsData['A'] ?? null,
+            'option_b' => $optsData['B'] ?? null,
+            'option_c' => $optsData['C'] ?? null,
+            'option_d' => $optsData['D'] ?? null,
+            'option_e' => $optsData['E'] ?? null,
+            'options_data' => $optsData,
+            'correct_answer' => strtoupper($validated['correct_answer']),
+            'points' => (int)$validated['points'],
+        ]);
 
         return back()->with('success', 'Soal baru berhasil ditambahkan.');
     }
@@ -285,18 +325,42 @@ class QuizController extends Controller
      */
     public function updateQuestion(Request $request, Quiz $quiz, Question $question)
     {
+        $optsCount = $quiz->options_count ?: 5;
+        $letters = range('A', 'T');
+        $validKeys = array_slice($letters, 0, $optsCount);
+
         $validated = $request->validate([
             'question_text' => 'required|string',
-            'option_a' => 'required|string',
-            'option_b' => 'required|string',
-            'option_c' => 'nullable|string',
-            'option_d' => 'nullable|string',
-            'option_e' => 'nullable|string',
-            'correct_answer' => 'required|in:A,B,C,D,E',
+            'correct_answer' => 'required|in:' . implode(',', $validKeys),
             'points' => 'required|integer|min:1',
         ]);
 
-        $question->update($validated);
+        $optsData = [];
+        for ($i = 0; $i < $optsCount; $i++) {
+            $letter = $letters[$i];
+            $val = $request->input('option_' . strtolower($letter));
+            if ($i < 2 && empty($val)) {
+                return back()->withInput()->with('error', "Pilihan $letter wajib diisi minimal 2 pilihan teratas.");
+            }
+            if ($val !== null && trim($val) !== '') {
+                $optsData[$letter] = $val;
+            }
+        }
+
+        $question->update([
+            'question_text' => $validated['question_text'],
+            'option_a' => $optsData['A'] ?? null,
+            'option_b' => $optsData['B'] ?? null,
+            'option_c' => $optsData['C'] ?? null,
+            'option_d' => $optsData['D'] ?? null,
+            'option_e' => $optsData['E'] ?? null,
+            'options_data' => $optsData,
+            'correct_answer' => strtoupper($validated['correct_answer']),
+            'points' => (int)$validated['points'],
+        ]);
+
+        return back()->with('success', 'Butir soal berhasil diperbarui.');
+    }
 
         return back()->with('success', 'Butir soal berhasil diperbarui.');
     }

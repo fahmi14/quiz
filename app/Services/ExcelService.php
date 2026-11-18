@@ -48,7 +48,7 @@ class ExcelService
     }
 
     /**
-     * Import questions mapping from sheet.
+     * Import questions mapping from sheet with support for dynamic options (2 - 20).
      */
     public function parseQuestionsWithMapping(string $filePath, array $mapping): array
     {
@@ -57,6 +57,7 @@ class ExcelService
         $highestRow = $worksheet->getHighestRow();
 
         $questions = [];
+        $letters = range('A', 'T'); // 20 opsi (A s/d T)
 
         for ($row = 2; $row <= $highestRow; $row++) {
             $qCol = $mapping['question_col'] ?? 'A';
@@ -66,20 +67,39 @@ class ExcelService
                 continue;
             }
 
-            $optA = trim((string) $worksheet->getCell(($mapping['opt_a_col'] ?? 'B') . $row)->getCalculatedValue());
-            $optB = trim((string) $worksheet->getCell(($mapping['opt_b_col'] ?? 'C') . $row)->getCalculatedValue());
-            $optC = isset($mapping['opt_c_col']) && $mapping['opt_c_col'] ? trim((string) $worksheet->getCell($mapping['opt_c_col'] . $row)->getCalculatedValue()) : null;
-            $optD = isset($mapping['opt_d_col']) && $mapping['opt_d_col'] ? trim((string) $worksheet->getCell($mapping['opt_d_col'] . $row)->getCalculatedValue()) : null;
-            $optE = isset($mapping['opt_e_col']) && $mapping['opt_e_col'] ? trim((string) $worksheet->getCell($mapping['opt_e_col'] . $row)->getCalculatedValue()) : null;
+            // Kumpulkan opsi jawaban dinamis
+            $optionsData = [];
+            foreach ($letters as $letter) {
+                $mapKey = 'opt_' . strtolower($letter) . '_col';
+                if (!empty($mapping[$mapKey])) {
+                    $colName = $mapping[$mapKey];
+                    $val = trim((string) $worksheet->getCell($colName . $row)->getCalculatedValue());
+                    if ($val !== '') {
+                        $optionsData[$letter] = $val;
+                    }
+                }
+            }
 
-            $rawKey = strtoupper(trim((string) $worksheet->getCell(($mapping['key_col'] ?? 'F') . $row)->getCalculatedValue()));
-            // Bersihkan jika user menulis "A. Jawaban", ambil huruf pertamanya saja jika valid
+            // Opsi fallback jika mapping format lama
+            $optA = $optionsData['A'] ?? (isset($mapping['opt_a_col']) ? trim((string)$worksheet->getCell($mapping['opt_a_col'] . $row)->getCalculatedValue()) : null);
+            $optB = $optionsData['B'] ?? (isset($mapping['opt_b_col']) ? trim((string)$worksheet->getCell($mapping['opt_b_col'] . $row)->getCalculatedValue()) : null);
+            $optC = $optionsData['C'] ?? (isset($mapping['opt_c_col']) ? trim((string)$worksheet->getCell($mapping['opt_c_col'] . $row)->getCalculatedValue()) : null);
+            $optD = $optionsData['D'] ?? (isset($mapping['opt_d_col']) ? trim((string)$worksheet->getCell($mapping['opt_d_col'] . $row)->getCalculatedValue()) : null);
+            $optE = $optionsData['E'] ?? (isset($mapping['opt_e_col']) ? trim((string)$worksheet->getCell($mapping['opt_e_col'] . $row)->getCalculatedValue()) : null);
+
+            if (!empty($optA)) $optionsData['A'] = $optA;
+            if (!empty($optB)) $optionsData['B'] = $optB;
+            if (!empty($optC)) $optionsData['C'] = $optC;
+            if (!empty($optD)) $optionsData['D'] = $optD;
+            if (!empty($optE)) $optionsData['E'] = $optE;
+
+            $rawKey = strtoupper(trim((string) $worksheet->getCell(($mapping['key_col'] ?? 'G') . $row)->getCalculatedValue()));
+            // Bersihkan jika user menulis "A. Jawaban", ambil hurufnya
             $correctKey = 'A';
-            if (preg_match('/^[A-E]/', $rawKey, $matches)) {
+            if (preg_match('/^[A-T]/', $rawKey, $matches)) {
                 $correctKey = $matches[0];
-            } elseif (in_array(strtoupper($rawKey), ['1', '2', '3', '4', '5'])) {
-                $mapNum = ['1' => 'A', '2' => 'B', '3' => 'C', '4' => 'D', '5' => 'E'];
-                $correctKey = $mapNum[$rawKey];
+            } elseif (is_numeric($rawKey) && (int)$rawKey >= 1 && (int)$rawKey <= 20) {
+                $correctKey = $letters[(int)$rawKey - 1] ?? 'A';
             }
 
             $points = isset($mapping['points_col']) && $mapping['points_col'] 
@@ -94,6 +114,7 @@ class ExcelService
                 'option_c' => $optC,
                 'option_d' => $optD,
                 'option_e' => $optE,
+                'options_data' => $optionsData,
                 'correct_answer' => $correctKey,
                 'points' => $points,
             ];
@@ -103,32 +124,44 @@ class ExcelService
     }
 
     /**
-     * Generate template Excel download for Quiz questions.
+     * Generate template Excel download for Quiz questions, menyesuaikan jumlah pilihan ganda (2 s/d 20).
      */
-    public function generateTemplate(): string
+    public function generateTemplate(int $optionsCount = 5): string
     {
+        $optionsCount = max(2, min(20, $optionsCount));
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Template Soal Kuis');
 
-        // Headers
-        $headers = [
-            'A1' => 'Soal Pertanyaan',
-            'B1' => 'Pilihan A',
-            'C1' => 'Pilihan B',
-            'D1' => 'Pilihan C',
-            'E1' => 'Pilihan D',
-            'F1' => 'Pilihan E',
-            'G1' => 'Kunci Jawaban (A/B/C/D/E)',
-            'H1' => 'Bobot Poin',
-        ];
+        $letters = range('A', 'T');
+        $headers = [];
+
+        // Kolom 1: Soal
+        $headers['A1'] = 'Soal Pertanyaan';
+
+        // Kolom Opsi (B1, C1, dst)
+        for ($i = 0; $i < $optionsCount; $i++) {
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i + 2);
+            $optionKey = $letters[$i];
+            $headers[$colLetter . '1'] = 'Pilihan ' . $optionKey;
+        }
+
+        // Kolom Kunci Jawaban
+        $keyCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($optionsCount + 2);
+        $firstOpt = $letters[0];
+        $lastOpt = $letters[$optionsCount - 1];
+        $headers[$keyCol . '1'] = "Kunci Jawaban ($firstOpt-$lastOpt)";
+
+        // Kolom Bobot Poin
+        $pointsCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($optionsCount + 3);
+        $headers[$pointsCol . '1'] = 'Bobot Poin';
 
         foreach ($headers as $cell => $val) {
             $sheet->setCellValue($cell, $val);
         }
 
         // Header Styling - Pastel Sage
-        $sheet->getStyle('A1:H1')->applyFromArray([
+        $sheet->getStyle("A1:{$pointsCol}1")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'color' => ['rgb' => '2F4858'],
@@ -151,65 +184,60 @@ class ExcelService
         ]);
         $sheet->getRowDimension(1)->setRowHeight(28);
 
-        // Contoh baris
-        $examples = [
+        // Contoh baris dinamis
+        $sampleQuestions = [
             [
-                'Ibu kota negara Indonesia di masa depan yang berlokasi di Kalimantan Timur adalah...',
-                'Nusantara',
-                'Balikpapan',
-                'Samarinda',
-                'Banjarmasin',
-                'Pontianak',
-                'A',
-                10
+                'q' => 'Ibu kota negara Indonesia di masa depan yang berlokasi di Kalimantan Timur adalah...',
+                'opts' => ['Nusantara', 'Balikpapan', 'Samarinda', 'Banjarmasin', 'Pontianak', 'Tarakan', 'Palangkaraya'],
+                'key' => 'A',
+                'points' => 10,
             ],
             [
-                'Lagu kebangsaan Indonesia Raya diciptakan oleh komponis...',
-                'Ismail Marzuki',
-                'W.R. Soepratman',
-                'Kusbini',
-                'C. Simanjuntak',
-                'L. Manik',
-                'B',
-                10
+                'q' => 'Lagu kebangsaan Indonesia Raya diciptakan oleh komponis nasional...',
+                'opts' => ['Ismail Marzuki', 'W.R. Soepratman', 'Kusbini', 'C. Simanjuntak', 'L. Manik', 'Gesang', 'Cornel Simanjuntak'],
+                'key' => 'B',
+                'points' => 10,
             ],
             [
-                'Alat musik tradisional yang terbuat dari bambu dan berasal dari Jawa Barat adalah...',
-                'Gamelan',
-                'Sasando',
-                'Angklung',
-                'Kolintang',
-                'Tifa',
-                'C',
-                10
+                'q' => 'Alat musik tradisional yang terbuat dari bambu dan berasal dari Jawa Barat adalah...',
+                'opts' => ['Gamelan', 'Sasando', 'Angklung', 'Kolintang', 'Tifa', 'Saluang', 'Calung'],
+                'key' => 'C',
+                'points' => 10,
             ],
         ];
 
         $rowNum = 2;
-        foreach ($examples as $row) {
-            $sheet->setCellValue("A$rowNum", $row[0]);
-            $sheet->setCellValue("B$rowNum", $row[1]);
-            $sheet->setCellValue("C$rowNum", $row[2]);
-            $sheet->setCellValue("D$rowNum", $row[3]);
-            $sheet->setCellValue("E$rowNum", $row[4]);
-            $sheet->setCellValue("F$rowNum", $row[5]);
-            $sheet->setCellValue("G$rowNum", $row[6]);
-            $sheet->setCellValue("H$rowNum", $row[7]);
-            $sheet->getStyle("G$rowNum:H$rowNum")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        foreach ($sampleQuestions as $item) {
+            $sheet->setCellValue("A$rowNum", $item['q']);
+            
+            for ($i = 0; $i < $optionsCount; $i++) {
+                $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i + 2);
+                $optText = $item['opts'][$i] ?? ('Opsi ' . $letters[$i]);
+                $sheet->setCellValue($colLetter . $rowNum, $optText);
+            }
+
+            // Kunci & Poin
+            $key = $item['key'];
+            if (!in_array($key, array_slice($letters, 0, $optionsCount))) {
+                $key = $firstOpt;
+            }
+            $sheet->setCellValue($keyCol . $rowNum, $key);
+            $sheet->setCellValue($pointsCol . $rowNum, $item['points']);
+            $sheet->getStyle("{$keyCol}$rowNum:{$pointsCol}$rowNum")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
             $rowNum++;
         }
 
         // Set column widths
         $sheet->getColumnDimension('A')->setWidth(45);
-        $sheet->getColumnDimension('B')->setWidth(25);
-        $sheet->getColumnDimension('C')->setWidth(25);
-        $sheet->getColumnDimension('D')->setWidth(25);
-        $sheet->getColumnDimension('E')->setWidth(25);
-        $sheet->getColumnDimension('F')->setWidth(25);
-        $sheet->getColumnDimension('G')->setWidth(24);
-        $sheet->getColumnDimension('H')->setWidth(15);
+        for ($i = 0; $i < $optionsCount; $i++) {
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i + 2);
+            $sheet->getColumnDimension($colLetter)->setWidth(22);
+        }
+        $sheet->getColumnDimension($keyCol)->setWidth(24);
+        $sheet->getColumnDimension($pointsCol)->setWidth(15);
 
-        $tempPath = Storage::path('template_quiz.xlsx');
+        $tempPath = Storage::path("template_quiz_{$optionsCount}_opsi.xlsx");
         if (!is_dir(dirname($tempPath))) {
             mkdir(dirname($tempPath), 0777, true);
         }
