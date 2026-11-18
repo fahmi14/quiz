@@ -216,8 +216,6 @@ class QuizController extends Controller
             return back()->withInput()->with('error', 'Gagal membuat kuis: ' . $e->getMessage());
         }
     }
-        }
-    }
 
     /**
      * Detail kuis & daftar soal.
@@ -358,9 +356,6 @@ class QuizController extends Controller
             'correct_answer' => strtoupper($validated['correct_answer']),
             'points' => (int)$validated['points'],
         ]);
-
-        return back()->with('success', 'Butir soal berhasil diperbarui.');
-    }
 
         return back()->with('success', 'Butir soal berhasil diperbarui.');
     }
