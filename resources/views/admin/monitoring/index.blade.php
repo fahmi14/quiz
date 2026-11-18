@@ -101,6 +101,22 @@
                 </div>
 
                 <div class="flex items-center gap-3">
+                    <!-- Bulk Delete Button (Muncul jika ada peserta tercentang) -->
+                    <button type="button" 
+                            x-show="selectedIds.length > 0"
+                            x-cloak
+                            x-transition:enter="transition ease-out duration-200"
+                            x-transition:enter-start="opacity-0 scale-90"
+                            x-transition:enter-end="opacity-100 scale-100"
+                            x-transition:leave="transition ease-in duration-150"
+                            x-transition:leave-start="opacity-100 scale-100"
+                            x-transition:leave-end="opacity-0 scale-90"
+                            @click="confirmBulkDelete()"
+                            class="px-3.5 py-1.5 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200/80 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all animate-pulse">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-500"></i>
+                        <span>Hapus Terpilih (<span x-text="selectedIds.length"></span>)</span>
+                    </button>
+
                     <span class="text-[11px] text-slate-400 flex items-center gap-1 font-mono">
                         <i data-lucide="clock" class="w-3.5 h-3.5"></i>
                         Pembaruan Terakhir: <span x-text="lastUpdated" class="font-bold text-slate-600"></span>
@@ -117,7 +133,15 @@
                 <table class="w-full text-left text-xs text-slate-600">
                     <thead class="bg-slate-50/70 border-b border-slate-100 text-[11px] uppercase tracking-wider text-slate-400 font-bold">
                         <tr>
-                            <th class="px-6 py-4 text-center w-16">Rank</th>
+                            <th class="px-4 py-4 text-center w-12">
+                                <label class="inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" 
+                                           :checked="isAllSelected" 
+                                           @change="toggleSelectAll($event.target.checked)"
+                                           class="w-4 h-4 rounded-lg border-slate-300 text-pastel-sage-500 focus:ring-pastel-sage-300 transition-all cursor-pointer">
+                                </label>
+                            </th>
+                            <th class="px-4 py-4 text-center w-16">Rank</th>
                             <th class="px-6 py-4">Nama Peserta</th>
                             <th class="px-6 py-4 text-center">Status</th>
                             <th class="px-6 py-4 text-center">Progress Jawaban</th>
@@ -129,11 +153,26 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         <template x-for="(p, idx) in participants" :key="p.id">
-                            <tr class="hover:bg-pastel-sage-50/40 transition-all duration-300 animate-slide-up"
-                                :class="p.status === 'completed' ? 'bg-white/60' : 'bg-amber-50/20'">
+                            <tr class="transition-all duration-300 animate-slide-up"
+                                :class="{
+                                    'bg-rose-50/50 hover:bg-rose-50/80': selectedIds.includes(p.id),
+                                    'hover:bg-pastel-sage-50/40 bg-white/60': !selectedIds.includes(p.id) && p.status === 'completed',
+                                    'hover:bg-pastel-sage-50/40 bg-amber-50/20': !selectedIds.includes(p.id) && p.status !== 'completed'
+                                }">
                                 
+                                <!-- Checkbox Baris -->
+                                <td class="px-4 py-4 text-center">
+                                    <label class="inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" 
+                                               :value="p.id" 
+                                               :checked="selectedIds.includes(p.id)"
+                                               @change="toggleSelect(p.id, $event.target.checked)"
+                                               class="w-4 h-4 rounded-lg border-slate-300 text-pastel-sage-500 focus:ring-pastel-sage-300 transition-all cursor-pointer">
+                                    </label>
+                                </td>
+
                                 <!-- Rank with trophy for top 3 -->
-                                <td class="px-6 py-4 text-center font-bold font-mono">
+                                <td class="px-4 py-4 text-center font-bold font-mono">
                                     <template x-if="p.rank === 1">
                                         <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-amber-100 text-amber-700 font-bold text-xs shadow-sm">🥇</span>
                                     </template>
@@ -237,6 +276,7 @@
             lastUpdated: '{{ now()->format('H:i:s') }}',
             stats: @json($stats),
             participants: @json($formattedParticipants ?? []),
+            selectedIds: [],
 
             init() {
                 if (this.quizId) {
@@ -244,6 +284,28 @@
                     setInterval(() => {
                         this.fetchLiveData();
                     }, 4000);
+                }
+            },
+
+            get isAllSelected() {
+                return this.participants.length > 0 && this.selectedIds.length === this.participants.length;
+            },
+
+            toggleSelectAll(checked) {
+                if (checked) {
+                    this.selectedIds = this.participants.map(p => p.id);
+                } else {
+                    this.selectedIds = [];
+                }
+            },
+
+            toggleSelect(id, checked) {
+                if (checked) {
+                    if (!this.selectedIds.includes(id)) {
+                        this.selectedIds.push(id);
+                    }
+                } else {
+                    this.selectedIds = this.selectedIds.filter(item => item !== id);
                 }
             },
 
@@ -262,6 +324,9 @@
                     this.participants = data.participants;
                     this.stats = data.stats;
                     this.lastUpdated = data.timestamp;
+                    // Filter selectedIds agar tidak ada id yang sudah terhapus
+                    const currentIds = this.participants.map(p => p.id);
+                    this.selectedIds = this.selectedIds.filter(id => currentIds.includes(id));
                     this.$nextTick(() => lucide.createIcons());
                 })
                 .catch(err => console.error('Error fetching live data:', err));
@@ -287,6 +352,7 @@
                                     message: res.message || 'Peserta berhasil dihapus.',
                                     type: 'success'
                                 });
+                                this.selectedIds = this.selectedIds.filter(id => id !== participant.id);
                                 this.fetchLiveData();
                             }
                         })
@@ -294,6 +360,54 @@
                             PastelDialog.alert({
                                 title: 'Gagal Menghapus',
                                 message: 'Terjadi kesalahan sistem saat mencoba menghapus peserta.',
+                                type: 'error'
+                            });
+                        });
+                    }
+                });
+            },
+
+            confirmBulkDelete() {
+                if (this.selectedIds.length === 0) return;
+
+                const count = this.selectedIds.length;
+                PastelDialog.confirmDelete({
+                    title: `Hapus ${count} Peserta Terpilih?`,
+                    message: `Anda telah memilih ${count} nama peserta. Seluruh rekapitulasi, rekaman jawaban, dan nilai mereka akan dihapus permanen dari sistem.`,
+                    onConfirm: () => {
+                        fetch(`{{ route('monitoring.participants.bulk-destroy') }}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                                'Accept': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                ids: this.selectedIds
+                            })
+                        })
+                        .then(res => res.json())
+                        .then(res => {
+                            if (res.success) {
+                                PastelDialog.alert({
+                                    title: 'Penghapusan Berhasil',
+                                    message: res.message || `${count} peserta berhasil dihapus.`,
+                                    type: 'success'
+                                });
+                                this.selectedIds = [];
+                                this.fetchLiveData();
+                            } else {
+                                PastelDialog.alert({
+                                    title: 'Gagal Menghapus',
+                                    message: res.message || 'Gagal menghapus peserta terpilih.',
+                                    type: 'error'
+                                });
+                            }
+                        })
+                        .catch(err => {
+                            PastelDialog.alert({
+                                title: 'Terjadi Kesalahan',
+                                message: 'Terjadi kesalahan jaringan atau server saat menghapus data.',
                                 type: 'error'
                             });
                         });

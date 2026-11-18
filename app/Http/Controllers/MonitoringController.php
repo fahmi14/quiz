@@ -162,4 +162,28 @@ class MonitoringController extends Controller
 
         return back()->with('success', 'Data peserta "' . $name . '" berhasil dihapus.');
     }
+
+    /**
+     * Hapus multiple / batch peserta kuis yang dipilih (centang).
+     */
+    public function bulkDestroyParticipants(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:participants,id',
+        ]);
+
+        $ids = $request->input('ids', []);
+        $count = Participant::whereIn('id', $ids)->delete();
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $count . ' data peserta terpilih berhasil dihapus.',
+                'deleted_count' => $count,
+            ]);
+        }
+
+        return back()->with('success', $count . ' data peserta terpilih berhasil dihapus.');
+    }
 }

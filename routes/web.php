@@ -55,9 +55,11 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::get('/monitoring', [MonitoringController::class, 'index'])->name('monitoring.index');
     Route::get('/monitoring/{quiz}/live-data', [MonitoringController::class, 'liveData'])->name('monitoring.live-data');
     Route::delete('/monitoring/participants/{participant}', [MonitoringController::class, 'destroyParticipant'])->name('monitoring.participants.destroy');
+    Route::post('/monitoring/participants/bulk-destroy', [MonitoringController::class, 'bulkDestroyParticipants'])->name('monitoring.participants.bulk-destroy');
 
     // Hasil Quiz & Export Excel
     Route::get('/results', [ResultController::class, 'index'])->name('results.index');
     Route::get('/results/{quiz}/export', [ResultController::class, 'export'])->name('results.export');
     Route::get('/results/{quiz}/participants/{participant}', [ResultController::class, 'participantDetail'])->name('results.participant');
+    Route::post('/results/participants/bulk-destroy', [MonitoringController::class, 'bulkDestroyParticipants'])->name('results.participants.bulk-destroy');
 });
