@@ -184,6 +184,7 @@
     <!-- Hidden Form for Finish -->
     <form id="finish-form" action="{{ route('student.finish', $token) }}" method="POST" class="hidden">
         @csrf
+        <input type="hidden" name="answers_backup" id="answers_backup" value="">
     </form>
 
 </div>
@@ -199,6 +200,7 @@
             isTimeWarning: false,
             questions: @json($orderedQuestions),
             token: '{{ $token }}',
+            saveUrl: '{{ route("student.save-answer", $token) }}',
             csrfToken: document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
 
             init() {
@@ -208,7 +210,7 @@
             },
 
             get answeredCount() {
-                return this.questions.filter(q => q.saved_answer !== null && q.saved_answer !== undefined).length;
+                return this.questions.filter(q => q.saved_answer !== null && q.saved_answer !== undefined && q.saved_answer !== '').length;
             },
 
             get progressPercentage() {
@@ -223,7 +225,7 @@
                         StudentDialog.alert({
                             title: 'Waktu Habis!',
                             message: 'Waktu pengerjaan telah selesai. Jawaban Anda akan otomatis dikumpulkan.',
-                            onOk: () => document.getElementById('finish-form').submit()
+                            onOk: () => this.submitFinalForm()
                         });
                         return;
                     }
@@ -250,8 +252,8 @@
                 q.saved_answer = optionKey;
                 this.$nextTick(() => lucide.createIcons());
 
-                // Autosave via AJAX
-                fetch(`/pengerjaan/${this.token}/jawaban`, {
+                // Autosave via AJAX menggunakan URL dinamis Laravel route
+                fetch(this.saveUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -262,7 +264,16 @@
                         question_id: questionId,
                         selected_option: optionKey
                     })
-                }).catch(err => console.error('Error saving answer:', err));
+                })
+                .then(res => {
+                    if (!res.ok) {
+                        console.error('Gagal menyimpan jawaban: HTTP Status ' + res.status);
+                    }
+                    return res.json();
+                })
+                .catch(err => {
+                    console.error('Network / CSRF error saat menyimpan jawaban:', err);
+                });
             },
 
             nextQuestion() {
@@ -284,6 +295,21 @@
                 this.$nextTick(() => lucide.createIcons());
             },
 
+            submitFinalForm() {
+                // Siapkan cadangan jawaban jika ada ajax yang pending / gagal
+                const answersMap = {};
+                this.questions.forEach(q => {
+                    if (q.saved_answer) {
+                        answersMap[q.id] = q.saved_answer;
+                    }
+                });
+                const backupInput = document.getElementById('answers_backup');
+                if (backupInput) {
+                    backupInput.value = JSON.stringify(answersMap);
+                }
+                document.getElementById('finish-form').submit();
+            },
+
             confirmFinish() {
                 const unans = this.questions.length - this.answeredCount;
                 let msg = 'Apakah Anda yakin ingin menyelesaikan kuis ini dan mengirimkan jawaban Anda?';
@@ -296,7 +322,7 @@
                     message: msg,
                     confirmText: 'Ya, Kumpulkan',
                     onConfirm: () => {
-                        document.getElementById('finish-form').submit();
+                        this.submitFinalForm();
                     }
                 });
             }

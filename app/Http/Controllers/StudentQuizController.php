@@ -272,6 +272,31 @@ class StudentQuizController extends Controller
             ->where('session_token', $token)
             ->firstOrFail();
 
+        // Jika peserta mengirimkan array answers sebagai fallback backup
+        if ($request->has('answers_backup')) {
+            $backupData = json_decode($request->input('answers_backup'), true);
+            if (is_array($backupData)) {
+                foreach ($backupData as $qId => $selectedOpt) {
+                    if (!empty($selectedOpt)) {
+                        $q = Question::find($qId);
+                        if ($q && $q->quiz_id === $participant->quiz_id) {
+                            $isCorrect = (strtoupper($selectedOpt) === strtoupper($q->correct_answer));
+                            ParticipantAnswer::updateOrCreate(
+                                [
+                                    'participant_id' => $participant->id,
+                                    'question_id' => $q->id,
+                                ],
+                                [
+                                    'selected_option' => strtoupper($selectedOpt),
+                                    'is_correct' => $isCorrect,
+                                ]
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
         if ($participant->status !== 'completed') {
             $this->finalizeQuiz($participant);
         }
