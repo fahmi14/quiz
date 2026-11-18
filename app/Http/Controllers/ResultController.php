@@ -6,6 +6,7 @@ use App\Models\Quiz;
 use App\Models\Participant;
 use App\Services\ExcelService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class ResultController extends Controller
 {
