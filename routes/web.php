@@ -45,6 +45,7 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::get('/quizzes/{quiz}/edit', [QuizController::class, 'edit'])->name('quizzes.edit');
     Route::put('/quizzes/{quiz}', [QuizController::class, 'update'])->name('quizzes.update');
     Route::delete('/quizzes/{quiz}', [QuizController::class, 'destroy'])->name('quizzes.destroy');
+    Route::post('/quizzes/{quiz}/clone', [QuizController::class, 'clone'])->name('quizzes.clone');
 
     // Manajemen Soal Quiz
     Route::post('/quizzes/{quiz}/questions', [QuizController::class, 'addQuestion'])->name('quizzes.questions.store');
@@ -59,6 +60,8 @@ Route::middleware('auth')->prefix('admin')->group(function () {
 
     // Hasil Quiz & Export Excel
     Route::get('/results', [ResultController::class, 'index'])->name('results.index');
+    Route::get('/results/formulation', [ResultController::class, 'formulation'])->name('results.formulation');
+    Route::post('/results/formulation/export', [ResultController::class, 'exportFormulation'])->name('results.formulation.export');
     Route::get('/results/{quiz}/export', [ResultController::class, 'export'])->name('results.export');
     Route::get('/results/{quiz}/participants/{participant}', [ResultController::class, 'participantDetail'])->name('results.participant');
     Route::post('/results/participants/bulk-destroy', [MonitoringController::class, 'bulkDestroyParticipants'])->name('results.participants.bulk-destroy');

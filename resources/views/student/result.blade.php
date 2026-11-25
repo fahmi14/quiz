@@ -64,10 +64,10 @@
                 <span>Ikuti Kuis Lainnya</span>
             </a>
 
-            <button type="button" onclick="triggerConfetti()" 
+            <button type="button" onclick="celebrate()" 
                     class="w-full py-3 px-6 rounded-2xl bg-white border border-slate-200/80 hover:bg-slate-50 text-slate-600 font-semibold text-xs transition-colors flex items-center justify-center gap-2">
                 <i data-lucide="sparkles" class="w-4 h-4 text-pastel-amber-500"></i>
-                <span>Rayakan Lagi dengan Konfeti!</span>
+                <span>Rayakan Lagi (Tepuk Tangan & Konfeti)!</span>
             </button>
         </div>
 
@@ -77,20 +77,109 @@
 
 @push('scripts')
 <script>
+    // Audio synthesizer untuk suara tepuk tangan (applause) menggunakan Web Audio API
+    function playApplauseSound() {
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+            const ctx = new AudioContext();
+
+            // Durasi tepuk tangan riuh (~3 detik)
+            const duration = 2.8;
+            const sampleRate = ctx.sampleRate;
+            const bufferSize = sampleRate * duration;
+            const buffer = ctx.createBuffer(1, bufferSize, sampleRate);
+            const data = buffer.getChannelData(0);
+
+            // Generate noise tepukan acak berlapis
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noise = ctx.createBufferSource();
+            noise.buffer = buffer;
+
+            // Bandpass filter untuk suara clapping manusia (sekitar 800-1400Hz)
+            const bandpass = ctx.createBiquadFilter();
+            bandpass.type = 'bandpass';
+            bandpass.frequency.value = 1100;
+            bandpass.Q.value = 1.2;
+
+            // Gain node untuk amplop suara fade-in dan fade-out halus
+            const gain = ctx.createGain();
+            const now = ctx.currentTime;
+            gain.gain.setValueAtTime(0.01, now);
+            gain.gain.exponentialRampToValueAtTime(0.7, now + 0.3); // Suara mulai riuh
+            gain.gain.exponentialRampToValueAtTime(0.5, now + 1.8);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + duration); // Perlahan mereda
+
+            noise.connect(bandpass);
+            bandpass.connect(gain);
+            gain.connect(ctx.destination);
+
+            noise.start(now);
+            noise.stop(now + duration);
+
+            // Simulasi ketukan tepuk tangan individu yang menonjol
+            const numClaps = 28;
+            for (let c = 0; c < numClaps; c++) {
+                const clapTime = now + (c * (duration / numClaps)) + (Math.random() * 0.08);
+                const clapBuffer = ctx.createBuffer(1, sampleRate * 0.06, sampleRate);
+                const clapData = clapBuffer.getChannelData(0);
+                for (let j = 0; j < clapData.length; j++) {
+                    clapData[j] = (Math.random() * 2 - 1) * Math.exp(-j / (sampleRate * 0.015));
+                }
+                const clapSource = ctx.createBufferSource();
+                clapSource.buffer = clapBuffer;
+
+                const clapFilter = ctx.createBiquadFilter();
+                clapFilter.type = 'bandpass';
+                clapFilter.frequency.value = 1200 + (Math.random() * 400 - 200);
+                clapFilter.Q.value = 2.0;
+
+                const clapGain = ctx.createGain();
+                clapGain.gain.setValueAtTime(0.4 + Math.random() * 0.3, clapTime);
+
+                clapSource.connect(clapFilter);
+                clapFilter.connect(clapGain);
+                clapGain.connect(ctx.destination);
+
+                clapSource.start(clapTime);
+                clapSource.stop(clapTime + 0.06);
+            }
+        } catch (e) {
+            console.warn('AudioContext playback error:', e);
+        }
+    }
+
     function triggerConfetti() {
         if (typeof confetti === 'function') {
             confetti({
-                particleCount: 80,
-                spread: 70,
+                particleCount: 90,
+                spread: 75,
                 origin: { y: 0.6 },
                 colors: ['#8EB59E', '#6FAFD6', '#DF7B8F', '#E0A838', '#9B8AC4']
             });
         }
     }
 
-    // Auto-fire confetti on load
-    window.addEventListener('load', () => {
+    function celebrate() {
+        playApplauseSound();
         triggerConfetti();
+    }
+
+    // Auto-fire konfeti & suara tepuk tangan saat halaman hasil selesai dimuat
+    window.addEventListener('load', () => {
+        celebrate();
     });
+
+    // Handle jika browser memblokir audio autoplay sebelum interaksi pengguna
+    document.addEventListener('click', () => {
+        // Jika belum sempat bunyi saat load karena autoplay policy browser
+        if (!window.__soundPlayed) {
+            playApplauseSound();
+            window.__soundPlayed = true;
+        }
+    }, { once: true });
 </script>
 @endpush

@@ -379,4 +379,60 @@ class QuizController extends Controller
         return redirect()->route('quizzes.index')
             ->with('success', 'Kuis "' . $title . '" berhasil dihapus.');
     }
+
+    /**
+     * Kloning kuis beserta seluruh butir soalnya.
+     * Waktu (starts_at dan expires_at) dikosongkan.
+     */
+    public function clone(Quiz $quiz)
+    {
+        DB::beginTransaction();
+        try {
+            // Generate kode unik baru
+            do {
+                $newCode = strtoupper(Str::random(6));
+            } while (Quiz::where('code', $newCode)->exists());
+
+            // Buat salinan quiz
+            $clonedQuiz = Quiz::create([
+                'title' => $quiz->title . ' (Salinan)',
+                'code' => $newCode,
+                'description' => $quiz->description,
+                'starts_at' => null,
+                'expires_at' => null,
+                'duration_minutes' => $quiz->duration_minutes,
+                'options_count' => $quiz->options_count,
+                'shuffle_questions' => $quiz->shuffle_questions,
+                'shuffle_options' => $quiz->shuffle_options,
+                'is_active' => true,
+                'created_by' => auth()->id() ?: $quiz->created_by,
+            ]);
+
+            // Kloning semua soal
+            $questions = $quiz->questions()->orderBy('order_num')->get();
+            foreach ($questions as $q) {
+                Question::create([
+                    'quiz_id' => $clonedQuiz->id,
+                    'order_num' => $q->order_num,
+                    'question_text' => $q->question_text,
+                    'option_a' => $q->option_a,
+                    'option_b' => $q->option_b,
+                    'option_c' => $q->option_c,
+                    'option_d' => $q->option_d,
+                    'option_e' => $q->option_e,
+                    'options_data' => $q->options_data,
+                    'correct_answer' => $q->correct_answer,
+                    'points' => $q->points,
+                ]);
+            }
+
+            DB::commit();
+
+            return redirect()->route('quizzes.show', $clonedQuiz)
+                ->with('success', "Kuis berhasil diduplikasi menjadi \"{$clonedQuiz->title}\" dengan kode baru: {$clonedQuiz->code}. Waktu pelaksanaan telah dikosongkan.");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal menduplikasi kuis: ' . $e->getMessage());
+        }
+    }
 }

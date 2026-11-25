@@ -16,15 +16,21 @@
             <p class="text-xs sm:text-sm text-slate-500 mt-1">Alur diagram: Pilih kuis, export Excel berformat rapi, dan analisa tabel hasil seluruh peserta.</p>
         </div>
 
-        @if($selectedQuiz)
-            <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2.5 flex-wrap">
+            <a href="{{ route('results.formulation') }}" 
+               class="px-4 py-2.5 rounded-2xl bg-pastel-lavender-50 text-pastel-lavender-600 border border-pastel-lavender-200 hover:bg-pastel-lavender-100 text-xs font-bold transition-all flex items-center gap-2 shadow-sm">
+                <i data-lucide="calculator" class="w-4 h-4 text-pastel-lavender-500"></i>
+                <span>Formulasi Nilai Gabungan</span>
+            </a>
+
+            @if($selectedQuiz)
                 <a href="{{ route('results.export', $selectedQuiz) }}" 
-                   class="px-5 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 hover:shadow-lg transition-all flex items-center gap-2">
+                   class="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 hover:shadow-lg transition-all flex items-center gap-2">
                     <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
                     <span>Export Hasil ke Excel (.xlsx)</span>
                 </a>
-            </div>
-        @endif
+            @endif
+        </div>
     </div>
 
     <!-- Filter & Quiz Selector Card -->
@@ -298,7 +304,7 @@
                     title: 'Hapus Peserta Kuis?',
                     message: `Apakah Anda yakin ingin menghapus data peserta "${name}"? Seluruh jawaban dan riwayat pengerjaan peserta ini akan dihapus permanen.`,
                     onConfirm: () => {
-                        fetch(`/admin/monitoring/participants/${id}`, {
+                        fetch(`{{ url('admin/monitoring/participants') }}/${id}`, {
                             method: 'DELETE',
                             headers: {
                                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),

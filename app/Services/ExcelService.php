@@ -368,4 +368,123 @@ class ExcelService
 
         return $tempPath;
     }
+
+    /**
+     * Export hasil formulasi gabungan beberapa kuis ke Excel.
+     */
+    public function exportCombinedResults(string $title, array $quizzes, array $data): string
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Hasil Akhir');
+
+        // Judul
+        $sheet->setCellValue('A1', strtoupper($title));
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('2F4858'));
+        $sheet->setCellValue('A2', 'Diekspor pada: ' . date('d F Y H:i:s'));
+        $sheet->getStyle('A2')->getFont()->setSize(10)->setItalic(true)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('64748B'));
+
+        // Header Table di Baris 4
+        $headers = ['Peringkat', 'Nama Peserta'];
+        foreach ($quizzes as $q) {
+            $headers[] = $q['title'] . ' (' . ($q['weight'] ?? 0) . '%)';
+        }
+        $headers[] = 'Nilai Akhir';
+        $headers[] = 'Status';
+
+        $lastColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(count($headers));
+        
+        foreach ($headers as $idx => $h) {
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($idx + 1);
+            $sheet->setCellValue($colLetter . '4', $h);
+        }
+
+        // Style header
+        $sheet->getStyle("A4:{$lastColLetter}4")->applyFromArray([
+            'font' => [
+                'bold' => true,
+                'color' => ['rgb' => '2F4858'],
+                'size' => 11,
+            ],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['rgb' => 'E6EFEA'],
+            ],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => Border::BORDER_THIN,
+                    'color' => ['rgb' => 'C9DCED'],
+                ],
+            ],
+        ]);
+        $sheet->getRowDimension(4)->setRowHeight(28);
+
+        // Data Rows
+        $rowNum = 5;
+        foreach ($data as $item) {
+            $sheet->setCellValue("A$rowNum", $item['rank'] ?? ($rowNum - 4));
+            $sheet->setCellValue("B$rowNum", $item['name'] ?? '-');
+
+            $colIdx = 3;
+            foreach ($quizzes as $q) {
+                $qId = $q['id'];
+                $score = $item['quiz_scores'][$qId] ?? 0;
+                $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIdx);
+                $sheet->setCellValue($colLetter . $rowNum, round((float)$score, 2));
+                $sheet->getStyle($colLetter . $rowNum)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                $colIdx++;
+            }
+
+            // Nilai Akhir
+            $finalScoreCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIdx);
+            $sheet->setCellValue($finalScoreCol . $rowNum, round((float)($item['final_score'] ?? 0), 2));
+            $sheet->getStyle($finalScoreCol . $rowNum)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle($finalScoreCol . $rowNum)->getFont()->setBold(true);
+
+            // Status
+            $statusCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIdx + 1);
+            $status = ($item['final_score'] ?? 0) >= 70 ? 'Lulus' : 'Remedial';
+            $sheet->setCellValue($statusCol . $rowNum, $status);
+            $sheet->getStyle($statusCol . $rowNum)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+            // Align Center A
+            $sheet->getStyle("A$rowNum")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+            // Zebra
+            if ($rowNum % 2 == 0) {
+                $sheet->getStyle("A$rowNum:{$lastColLetter}$rowNum")->getFill()->applyFromArray([
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => 'F9FBFC'],
+                ]);
+            }
+
+            $sheet->getStyle("A$rowNum:{$lastColLetter}$rowNum")->getBorders()->getAllBorders()->applyFromArray([
+                'borderStyle' => Border::BORDER_THIN,
+                'color' => ['rgb' => 'E2E8F0'],
+            ]);
+
+            $rowNum++;
+        }
+
+        // Set column widths
+        $sheet->getColumnDimension('A')->setWidth(10);
+        $sheet->getColumnDimension('B')->setWidth(30);
+        for ($c = 3; $c <= count($headers); $c++) {
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($c);
+            $sheet->getColumnDimension($colLetter)->setWidth(20);
+        }
+
+        $tempPath = Storage::path('formulasi_hasil_' . date('Ymd_His') . '.xlsx');
+        if (!is_dir(dirname($tempPath))) {
+            mkdir(dirname($tempPath), 0777, true);
+        }
+        $writer = new Xlsx($spreadsheet);
+        $writer->save($tempPath);
+
+        return $tempPath;
+    }
 }

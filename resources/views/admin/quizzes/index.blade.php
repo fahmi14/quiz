@@ -208,6 +208,19 @@
                                             <i data-lucide="edit-3" class="w-4 h-4"></i>
                                         </a>
 
+                                        <form id="clone-quiz-{{ $quiz->id }}" action="{{ route('quizzes.clone', $quiz) }}" method="POST">
+                                            @csrf
+                                            <button type="button" 
+                                                    onclick="PastelDialog.confirmClone({
+                                                        title: 'Kloning Kuis Ini?',
+                                                        message: 'Duplikasi kuis {{ addslashes($quiz->title) }} beserta semua butir soal? Waktu kuis baru akan dikosongkan.',
+                                                        onConfirm: () => document.getElementById('clone-quiz-{{ $quiz->id }}').submit()
+                                                    })"
+                                                    class="p-2 rounded-xl bg-pastel-lavender-50 text-pastel-lavender-500 hover:bg-pastel-lavender-100 transition-colors" title="Kloning Kuis">
+                                                <i data-lucide="copy" class="w-4 h-4"></i>
+                                            </button>
+                                        </form>
+
                                         <a href="{{ route('quizzes.show', $quiz) }}" 
                                            class="p-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors" title="Kelola Soal">
                                             <i data-lucide="settings" class="w-4 h-4"></i>

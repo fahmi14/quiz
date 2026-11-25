@@ -184,7 +184,7 @@
                     </a>
 
                     <a href="{{ route('results.index') }}" 
-                       class="px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 {{ request()->routeIs('results.index') ? 'bg-white text-pastel-sage-600 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50' }}">
+                       class="px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 {{ request()->routeIs('results.index', 'results.formulation', 'results.participant') ? 'bg-white text-pastel-sage-600 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50' }}">
                         <i data-lucide="award" class="w-4 h-4"></i>
                         Hasil Quiz
                     </a>
@@ -314,6 +314,62 @@
 
         // Global Pastel Dialog System (Anti-Slop Theme)
         window.PastelDialog = {
+            // Konfirmasi Kloning (Pastel Lavender, tanpa kode verifikasi)
+            confirmClone({ title, message, onConfirm }) {
+                const container = document.getElementById('pastel-modal-container');
+                const backdrop = document.getElementById('pastel-modal-backdrop');
+                const box = document.getElementById('pastel-modal-box');
+                const iconBg = document.getElementById('pastel-modal-icon-bg');
+                const iconSlot = document.getElementById('pastel-modal-icon-slot');
+                const titleEl = document.getElementById('pastel-modal-title');
+                const msgEl = document.getElementById('pastel-modal-message');
+                const challengeArea = document.getElementById('pastel-modal-challenge-area');
+                const btnCancel = document.getElementById('pastel-modal-btn-cancel');
+                const btnConfirm = document.getElementById('pastel-modal-btn-confirm');
+
+                titleEl.textContent = title || 'Kloning Kuis?';
+                msgEl.textContent = message || 'Duplikasi seluruh butir soal kuis ini ke kuis baru dengan waktu yang dikosongkan.';
+
+                // Styling Khusus Kloning (Pastel Lavender & Ikon Salin)
+                iconBg.className = 'mx-auto flex h-14 w-14 items-center justify-center rounded-2xl mb-4 bg-pastel-lavender-100 text-pastel-lavender-600';
+                iconSlot.innerHTML = '<i data-lucide="copy" class="w-7 h-7"></i>';
+
+                btnConfirm.className = 'w-1/2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-pastel-lavender-500 to-indigo-500 hover:opacity-90 text-white text-xs font-bold shadow-md shadow-pastel-lavender-500/20 transition-all';
+                btnConfirm.textContent = 'Ya, Kloning Kuis';
+
+                // Tanpa kode random
+                challengeArea.classList.add('hidden');
+                btnCancel.classList.remove('hidden');
+
+                container.classList.remove('hidden');
+                setTimeout(() => {
+                    backdrop.classList.remove('opacity-0');
+                    backdrop.classList.add('opacity-100');
+                    box.classList.remove('scale-95', 'opacity-0');
+                    box.classList.add('scale-100', 'opacity-100');
+                    lucide.createIcons();
+                }, 10);
+
+                const closeModal = () => {
+                    backdrop.classList.remove('opacity-100');
+                    backdrop.classList.add('opacity-0');
+                    box.classList.remove('scale-100', 'opacity-100');
+                    box.classList.add('scale-95', 'opacity-0');
+                    setTimeout(() => {
+                        container.classList.add('hidden');
+                    }, 200);
+                };
+
+                btnCancel.onclick = closeModal;
+
+                btnConfirm.onclick = () => {
+                    closeModal();
+                    if (typeof onConfirm === 'function') {
+                        onConfirm();
+                    }
+                };
+            },
+
             confirmDelete({ title, message, onConfirm }) {
                 const randomCode = Math.floor(1000 + Math.random() * 9000).toString();
                 

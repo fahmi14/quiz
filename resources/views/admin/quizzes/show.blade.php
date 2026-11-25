@@ -64,6 +64,20 @@
         </div>
 
         <div class="flex items-center gap-2.5 flex-wrap">
+            <form action="{{ route('quizzes.clone', $quiz) }}" method="POST" id="clone-form-show">
+                @csrf
+                <button type="button"
+                        onclick="PastelDialog.confirmClone({
+                            title: 'Kloning Kuis Ini?',
+                            message: 'Apakah Anda ingin menduplikasi kuis ini beserta seluruh butir soalnya? Waktu mulai & selesai kuis baru akan dikosongkan.',
+                            onConfirm: () => document.getElementById('clone-form-show').submit()
+                        })"
+                        class="px-4 py-2.5 rounded-2xl bg-pastel-lavender-50 text-pastel-lavender-600 border border-pastel-lavender-200 hover:bg-pastel-lavender-100 text-xs font-semibold flex items-center gap-2 transition-all shadow-sm">
+                    <i data-lucide="copy" class="w-4 h-4"></i>
+                    Kloning Kuis
+                </button>
+            </form>
+
             <a href="{{ route('quizzes.edit', $quiz) }}" 
                class="px-4 py-2.5 rounded-2xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-2 shadow-sm transition-all">
                 <i data-lucide="edit-3" class="w-4 h-4 text-pastel-amber-500"></i>
@@ -209,9 +223,9 @@
     <!-- Modal Tambah Soal Manual (Dinamis 2 - 20 Pilihan) -->
     <div x-show="showAddQuestionModal" 
          x-transition.opacity 
-         class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+         class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-start justify-center p-4 sm:pt-10 overflow-y-auto">
         
-        <div class="glass-card rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-soft-lg border border-white max-h-[90vh] overflow-y-auto"
+        <div class="glass-card rounded-3xl p-6 sm:p-7 max-w-xl w-full shadow-soft-lg border border-white my-auto sm:my-0 max-h-[85vh] flex flex-col"
              @click.away="showAddQuestionModal = false">
             
             <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
@@ -276,9 +290,9 @@
     <!-- Modal Edit Soal (Dinamis 2 - 20 Pilihan) -->
     <div x-show="showEditQuestionModal" 
          x-transition.opacity 
-         class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+         class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-start justify-center p-4 sm:pt-10 overflow-y-auto">
         
-        <div class="glass-card rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-soft-lg border border-white max-h-[90vh] overflow-y-auto"
+        <div class="glass-card rounded-3xl p-6 sm:p-7 max-w-xl w-full shadow-soft-lg border border-white my-auto sm:my-0 max-h-[85vh] flex flex-col"
              @click.away="showEditQuestionModal = false">
             
             <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
@@ -291,7 +305,7 @@
                 </button>
             </div>
 
-            <form :action="'/admin/quizzes/{{ $quiz->id }}/questions/' + editQuestionData.id" method="POST" class="space-y-3.5">
+            <form :action="'{{ url('admin/quizzes/' . $quiz->id . '/questions') }}/' + editQuestionData.id" method="POST" class="space-y-3.5">
                 @csrf
                 @method('PUT')
 

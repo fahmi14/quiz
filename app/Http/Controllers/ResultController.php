@@ -96,4 +96,73 @@ class ResultController extends Controller
         $participant->load(['answers.question']);
         return view('admin.results.participant-detail', compact('quiz', 'participant'));
     }
+
+    /**
+     * Halaman formulasi nilai gabungan multi-quiz.
+     */
+    public function formulation(Request $request)
+    {
+        $allQuizzes = Quiz::withCount(['participants' => function ($q) {
+            $q->where('status', 'completed');
+        }])->latest()->get();
+
+        $selectedQuizIds = array_filter((array) $request->input('quiz_ids', []));
+        $weights = (array) $request->input('weights', []);
+
+        // Default jika pertama kali buka dan ada minimal 2 kuis
+        if (empty($selectedQuizIds) && $allQuizzes->count() >= 2) {
+            $firstTwo = $allQuizzes->take(2);
+            $selectedQuizIds = $firstTwo->pluck('id')->toArray();
+            $weights = [
+                $selectedQuizIds[0] => 50,
+                $selectedQuizIds[1] => 50,
+            ];
+        }
+
+        $selectedQuizzes = Quiz::with(['participants' => function ($q) {
+            $q->orderByDesc('score');
+        }])->whereIn('id', $selectedQuizIds)->get();
+
+        // Peserta per kuis
+        $quizParticipantsMap = [];
+        foreach ($selectedQuizzes as $q) {
+            $quizParticipantsMap[$q->id] = $q->participants->map(function ($p) {
+                return [
+                    'id' => $p->id,
+                    'name' => trim($p->name),
+                    'score' => (float) $p->score,
+                    'status' => $p->status,
+                ];
+            })->values()->toArray();
+        }
+
+        return view('admin.results.formulation', compact(
+            'allQuizzes',
+            'selectedQuizIds',
+            'weights',
+            'selectedQuizzes',
+            'quizParticipantsMap'
+        ));
+    }
+
+    /**
+     * Export formulasi hasil akhir ke Excel.
+     */
+    public function exportFormulation(Request $request)
+    {
+        $validated = $request->validate([
+            'formula_title' => 'nullable|string|max:150',
+            'data' => 'required|array',
+            'quizzes' => 'required|array',
+        ]);
+
+        $path = $this->excelService->exportCombinedResults(
+            $validated['formula_title'] ?? 'Formulasi Hasil Akhir Kuis',
+            $validated['quizzes'],
+            $validated['data']
+        );
+
+        $fileName = 'Formulasi_Hasil_' . date('Ymd_His') . '.xlsx';
+        return response()->download($path, $fileName)->deleteFileAfterSend(true);
+    }
 }

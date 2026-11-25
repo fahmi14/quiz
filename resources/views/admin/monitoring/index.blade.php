@@ -316,7 +316,7 @@
             fetchLiveData() {
                 if (!this.quizId) return;
 
-                fetch(`/admin/monitoring/${this.quizId}/live-data`, {
+                fetch(`{{ url('admin/monitoring') }}/${this.quizId}/live-data`, {
                     headers: { 'Accept': 'application/json' }
                 })
                 .then(res => res.json())
@@ -337,7 +337,7 @@
                     title: 'Hapus Peserta Kuis?',
                     message: `Apakah Anda yakin ingin menghapus peserta "${participant.name}"? Seluruh data jawaban dan hasil nilai peserta ini akan dihapus permanen.`,
                     onConfirm: () => {
-                        fetch(`/admin/monitoring/participants/${participant.id}`, {
+                        fetch(`{{ url('admin/monitoring/participants') }}/${participant.id}`, {
                             method: 'DELETE',
                             headers: {
                                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
