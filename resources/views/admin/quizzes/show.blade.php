@@ -223,9 +223,9 @@
     <!-- Modal Tambah Soal Manual (Dinamis 2 - 20 Pilihan) -->
     <div x-show="showAddQuestionModal" 
          x-transition.opacity 
-         class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-start justify-center p-4 sm:pt-10 overflow-y-auto">
+         class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
         
-        <div class="glass-card rounded-3xl p-6 sm:p-7 max-w-xl w-full shadow-soft-lg border border-white my-auto sm:my-0 max-h-[85vh] flex flex-col"
+        <div class="glass-card rounded-3xl p-6 sm:p-7 max-w-xl w-full shadow-soft-lg border border-white max-h-[90vh] overflow-y-auto"
              @click.away="showAddQuestionModal = false">
             
             <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
@@ -290,9 +290,9 @@
     <!-- Modal Edit Soal (Dinamis 2 - 20 Pilihan) -->
     <div x-show="showEditQuestionModal" 
          x-transition.opacity 
-         class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-start justify-center p-4 sm:pt-10 overflow-y-auto">
+         class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
         
-        <div class="glass-card rounded-3xl p-6 sm:p-7 max-w-xl w-full shadow-soft-lg border border-white my-auto sm:my-0 max-h-[85vh] flex flex-col"
+        <div class="glass-card rounded-3xl p-6 sm:p-7 max-w-xl w-full shadow-soft-lg border border-white max-h-[90vh] overflow-y-auto"
              @click.away="showEditQuestionModal = false">
             
             <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
