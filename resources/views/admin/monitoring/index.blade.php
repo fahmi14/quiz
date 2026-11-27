@@ -187,13 +187,25 @@
                                     </template>
                                 </td>
 
-                                <!-- Nama Peserta -->
+                                <!-- Nama Peserta & Info Kelas/Absen -->
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-2.5">
-                                        <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-pastel-sage-100 to-pastel-sky-100 text-slate-700 font-bold text-xs flex items-center justify-center">
+                                        <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-pastel-sage-100 to-pastel-sky-100 text-slate-700 font-bold text-xs flex items-center justify-center shrink-0">
                                             <span x-text="p.name.charAt(0)"></span>
                                         </div>
-                                        <span class="font-bold text-slate-800 text-sm" x-text="p.name"></span>
+                                        <div>
+                                            <span class="font-bold text-slate-800 text-sm block" x-text="p.name"></span>
+                                            <div class="flex items-center gap-2 mt-0.5" x-show="p.class_name || p.attendance_number">
+                                                <span x-show="p.class_name" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-semibold">
+                                                    <i data-lucide="graduation-cap" class="w-3 h-3 text-slate-400"></i>
+                                                    <span x-text="p.class_name"></span>
+                                                </span>
+                                                <span x-show="p.attendance_number" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-pastel-sky-50 text-pastel-sky-600 border border-pastel-sky-200/60 text-[10px] font-mono font-bold">
+                                                    <span class="text-slate-400 font-normal">Absen:</span>
+                                                    <span x-text="p.attendance_number"></span>
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </td>
 

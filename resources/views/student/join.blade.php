@@ -85,6 +85,43 @@
                 @enderror
             </div>
 
+            <!-- No Absen dan Kelas (Opsional) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                    <label for="attendance_number" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+                        No. Absen <span class="text-slate-400 font-normal lowercase">(opsional)</span>
+                    </label>
+                    <div class="relative">
+                        <input type="text" 
+                               id="attendance_number" 
+                               name="attendance_number" 
+                               value="{{ old('attendance_number') }}" 
+                               placeholder="Contoh: 14"
+                               class="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 bg-white/90 text-slate-800 placeholder:text-slate-300 focus:outline-none focus:border-pastel-sage-400 focus:ring-4 focus:ring-pastel-sage-100 transition-all shadow-sm text-sm">
+                        <div class="absolute inset-y-0 right-3.5 flex items-center pointer-events-none text-slate-400">
+                            <i data-lucide="hash" class="w-4 h-4"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="class_name" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+                        Kelas <span class="text-slate-400 font-normal lowercase">(opsional)</span>
+                    </label>
+                    <div class="relative">
+                        <input type="text" 
+                               id="class_name" 
+                               name="class_name" 
+                               value="{{ old('class_name') }}" 
+                               placeholder="Contoh: XII IPA 1"
+                               class="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 bg-white/90 text-slate-800 placeholder:text-slate-300 focus:outline-none focus:border-pastel-sage-400 focus:ring-4 focus:ring-pastel-sage-100 transition-all shadow-sm text-sm">
+                        <div class="absolute inset-y-0 right-3.5 flex items-center pointer-events-none text-slate-400">
+                            <i data-lucide="graduation-cap" class="w-4 h-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div>
                 <label for="identifier" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
                     Email / Nomor HP / Instansi (Opsional)

@@ -13,6 +13,8 @@ class Participant extends Model
         'quiz_id',
         'session_token',
         'name',
+        'attendance_number',
+        'class_name',
         'identifier',
         'started_at',
         'finished_at',

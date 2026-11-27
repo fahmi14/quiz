@@ -258,7 +258,7 @@ class ExcelService
 
         // Title Info
         $sheet->setCellValue('A1', 'REKAPITULASI HASIL KUIS: ' . strtoupper($quiz->title));
-        $sheet->setCellValue('A2', 'Kode Kuis: ' . $quiz->code . ' | Total Peserta: ' . $participants->count() . ' | Tanggal Unduh: ' . now()->format('d M Y H:i'));
+        $sheet->setCellValue('A2', 'Kode Kuis: ' . $quiz->code . ' | Total Peserta: ' . $participants->count() . ' | Tanggal Unduh: ' . now()->format('d M Y H:i') . ' WIB');
         
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14)->getColor()->setRGB('2D3748');
         $sheet->getStyle('A2')->getFont()->setSize(10)->getColor()->setRGB('718096');
@@ -267,14 +267,16 @@ class ExcelService
         $headers = [
             'A4' => 'Peringkat',
             'B4' => 'Nama Peserta',
-            'C4' => 'Status',
-            'D4' => 'Skor Akhir',
-            'E4' => 'Benar',
-            'F4' => 'Terjawab',
-            'G4' => 'Total Soal',
-            'H4' => 'Waktu Mulai',
-            'I4' => 'Waktu Selesai',
-            'J4' => 'Durasi Pengerjaan',
+            'C4' => 'No. Absen',
+            'D4' => 'Kelas',
+            'E4' => 'Status',
+            'F4' => 'Skor Akhir',
+            'G4' => 'Benar',
+            'H4' => 'Terjawab',
+            'I4' => 'Total Soal',
+            'J4' => 'Waktu Mulai',
+            'K4' => 'Waktu Selesai',
+            'L4' => 'Durasi Pengerjaan',
         ];
 
         foreach ($headers as $cell => $val) {
@@ -282,7 +284,7 @@ class ExcelService
         }
 
         // Header Styling - Pastel Blue/Lavish
-        $sheet->getStyle('A4:J4')->applyFromArray([
+        $sheet->getStyle('A4:L4')->applyFromArray([
             'font' => [
                 'bold' => true,
                 'color' => ['rgb' => '2B4C5F'],
@@ -317,29 +319,32 @@ class ExcelService
 
             $sheet->setCellValue("A$rowNum", $rank++);
             $sheet->setCellValue("B$rowNum", $p->name);
-            $sheet->setCellValue("C$rowNum", $p->status === 'completed' ? 'Selesai' : 'Mengerjakan');
-            $sheet->setCellValue("D$rowNum", round($p->score, 1));
-            $sheet->setCellValue("E$rowNum", $p->total_correct);
-            $sheet->setCellValue("F$rowNum", $p->total_answered);
-            $sheet->setCellValue("G$rowNum", $p->total_questions ?: $quiz->questions->count());
-            $sheet->setCellValue("H$rowNum", $p->started_at ? $p->started_at->format('d/m/Y H:i:s') : '-');
-            $sheet->setCellValue("I$rowNum", $p->finished_at ? $p->finished_at->format('d/m/Y H:i:s') : '-');
-            $sheet->setCellValue("J$rowNum", $durationStr);
+            $sheet->setCellValue("C$rowNum", $p->attendance_number ?: '-');
+            $sheet->setCellValue("D$rowNum", $p->class_name ?: '-');
+            $sheet->setCellValue("E$rowNum", $p->status === 'completed' ? 'Selesai' : 'Mengerjakan');
+            $sheet->setCellValue("F$rowNum", round($p->score, 1));
+            $sheet->setCellValue("G$rowNum", $p->total_correct);
+            $sheet->setCellValue("H$rowNum", $p->total_answered);
+            $sheet->setCellValue("I$rowNum", $p->total_questions ?: $quiz->questions->count());
+            $sheet->setCellValue("J$rowNum", $p->started_at ? $p->started_at->format('d/m/Y H:i:s') : '-');
+            $sheet->setCellValue("K$rowNum", $p->finished_at ? $p->finished_at->format('d/m/Y H:i:s') : '-');
+            $sheet->setCellValue("L$rowNum", $durationStr);
 
             // Row styling
             $sheet->getStyle("A$rowNum")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle("C$rowNum:G$rowNum")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle("H$rowNum:J$rowNum")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("C$rowNum:E$rowNum")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("F$rowNum:I$rowNum")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("J$rowNum:L$rowNum")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
             // Zebra striping soft pastel
             if ($rowNum % 2 == 0) {
-                $sheet->getStyle("A$rowNum:J$rowNum")->getFill()->applyFromArray([
+                $sheet->getStyle("A$rowNum:L$rowNum")->getFill()->applyFromArray([
                     'fillType' => Fill::FILL_SOLID,
                     'startColor' => ['rgb' => 'F9FBFC'],
                 ]);
             }
 
-            $sheet->getStyle("A$rowNum:J$rowNum")->getBorders()->getAllBorders()->applyFromArray([
+            $sheet->getStyle("A$rowNum:L$rowNum")->getBorders()->getAllBorders()->applyFromArray([
                 'borderStyle' => Border::BORDER_THIN,
                 'color' => ['rgb' => 'E2E8F0'],
             ]);
@@ -350,14 +355,16 @@ class ExcelService
         // Set column widths
         $sheet->getColumnDimension('A')->setWidth(10);
         $sheet->getColumnDimension('B')->setWidth(28);
-        $sheet->getColumnDimension('C')->setWidth(16);
-        $sheet->getColumnDimension('D')->setWidth(14);
-        $sheet->getColumnDimension('E')->setWidth(12);
-        $sheet->getColumnDimension('F')->setWidth(12);
+        $sheet->getColumnDimension('C')->setWidth(14);
+        $sheet->getColumnDimension('D')->setWidth(16);
+        $sheet->getColumnDimension('E')->setWidth(16);
+        $sheet->getColumnDimension('F')->setWidth(14);
         $sheet->getColumnDimension('G')->setWidth(12);
-        $sheet->getColumnDimension('H')->setWidth(20);
-        $sheet->getColumnDimension('I')->setWidth(20);
-        $sheet->getColumnDimension('J')->setWidth(22);
+        $sheet->getColumnDimension('H')->setWidth(12);
+        $sheet->getColumnDimension('I')->setWidth(12);
+        $sheet->getColumnDimension('J')->setWidth(20);
+        $sheet->getColumnDimension('K')->setWidth(20);
+        $sheet->getColumnDimension('L')->setWidth(22);
 
         $tempPath = Storage::path('hasil_kuis_' . $quiz->code . '_' . date('Ymd_His') . '.xlsx');
         if (!is_dir(dirname($tempPath))) {

@@ -143,7 +143,7 @@
                                     <div class="flex items-center gap-1.5 text-slate-700 font-medium">
                                         <i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i>
                                         @if($quiz->expires_at)
-                                            s.d {{ $quiz->expires_at->format('d M Y H:i') }}
+                                            s.d {{ $quiz->expires_at->format('d M Y H:i') }} WIB
                                         @else
                                             <span class="text-slate-400">Tidak terbatas</span>
                                         @endif

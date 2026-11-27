@@ -196,9 +196,23 @@
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="font-bold text-slate-800 text-sm">{{ $p->name }}</div>
-                                    @if($p->identifier)
-                                        <div class="text-[11px] text-slate-400">{{ $p->identifier }}</div>
-                                    @endif
+                                    <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                                        @if($p->class_name)
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-semibold">
+                                                <i data-lucide="graduation-cap" class="w-3 h-3 text-slate-400"></i>
+                                                {{ $p->class_name }}
+                                            </span>
+                                        @endif
+                                        @if($p->attendance_number)
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-pastel-sky-50 text-pastel-sky-600 border border-pastel-sky-200/60 text-[10px] font-mono font-bold">
+                                                <span class="text-slate-400 font-normal">Absen:</span>
+                                                {{ $p->attendance_number }}
+                                            </span>
+                                        @endif
+                                        @if($p->identifier)
+                                            <span class="text-[11px] text-slate-400">{{ $p->identifier }}</span>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4 text-center">
                                     @if($p->status === 'completed')
@@ -219,10 +233,10 @@
                                     <span class="text-slate-400 text-[11px]">({{ $p->total_questions ?: $selectedQuiz->questions->count() }} soal)</span>
                                 </td>
                                 <td class="px-6 py-4 text-center font-mono text-[11px] text-slate-500">
-                                    {{ $p->started_at ? $p->started_at->format('d/m/y H:i') : '-' }}
+                                    {{ $p->started_at ? $p->started_at->format('d/m/y H:i') . ' WIB' : '-' }}
                                 </td>
                                 <td class="px-6 py-4 text-center font-mono text-[11px] text-slate-500">
-                                    {{ $p->finished_at ? $p->finished_at->format('d/m/y H:i') : '-' }}
+                                    {{ $p->finished_at ? $p->finished_at->format('d/m/y H:i') . ' WIB' : '-' }}
                                 </td>
                                 <td class="px-6 py-4 text-center text-xs text-slate-600">
                                     @if($p->started_at && $p->finished_at)

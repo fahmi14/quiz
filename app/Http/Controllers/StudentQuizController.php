@@ -42,11 +42,11 @@ class StudentQuizController extends Controller
         }
 
         if ($quiz->isUpcoming()) {
-            return back()->withInput()->with('error', 'Kuis ini belum dimulai. Dimulai pada: ' . $quiz->starts_at->format('d M Y H:i'));
+            return back()->withInput()->with('error', 'Kuis ini belum dimulai. Dimulai pada: ' . $quiz->starts_at->format('d M Y H:i') . ' WIB');
         }
 
         if ($quiz->isExpired()) {
-            return back()->withInput()->with('error', 'Masa aktif kuis telah berakhir pada: ' . $quiz->expires_at->format('d M Y H:i'));
+            return back()->withInput()->with('error', 'Masa aktif kuis telah berakhir pada: ' . $quiz->expires_at->format('d M Y H:i') . ' WIB');
         }
 
         return redirect()->route('student.join', ['code' => $quiz->code]);
@@ -75,6 +75,8 @@ class StudentQuizController extends Controller
 
         $request->validate([
             'name' => 'required|string|min:2|max:100',
+            'attendance_number' => 'nullable|string|max:50',
+            'class_name' => 'nullable|string|max:100',
             'identifier' => 'nullable|string|max:100',
         ], [
             'name.required' => 'Nama lengkap peserta wajib diisi.',
@@ -109,6 +111,8 @@ class StudentQuizController extends Controller
             'quiz_id' => $quiz->id,
             'session_token' => $sessionToken,
             'name' => $request->input('name'),
+            'attendance_number' => $request->input('attendance_number'),
+            'class_name' => $request->input('class_name'),
             'identifier' => $request->input('identifier'),
             'started_at' => now(),
             'status' => 'in_progress',
