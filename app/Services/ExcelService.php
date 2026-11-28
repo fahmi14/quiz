@@ -269,14 +269,15 @@ class ExcelService
             'B4' => 'Nama Peserta',
             'C4' => 'No. Absen',
             'D4' => 'Kelas',
-            'E4' => 'Status',
-            'F4' => 'Skor Akhir',
-            'G4' => 'Benar',
-            'H4' => 'Terjawab',
-            'I4' => 'Total Soal',
-            'J4' => 'Waktu Mulai',
-            'K4' => 'Waktu Selesai',
-            'L4' => 'Durasi Pengerjaan',
+            'E4' => 'Email / No. HP / Instansi',
+            'F4' => 'Status',
+            'G4' => 'Skor Akhir',
+            'H4' => 'Benar',
+            'I4' => 'Terjawab',
+            'J4' => 'Total Soal',
+            'K4' => 'Waktu Mulai',
+            'L4' => 'Waktu Selesai',
+            'M4' => 'Durasi Pengerjaan',
         ];
 
         foreach ($headers as $cell => $val) {
@@ -284,7 +285,7 @@ class ExcelService
         }
 
         // Header Styling - Pastel Blue/Lavish
-        $sheet->getStyle('A4:L4')->applyFromArray([
+        $sheet->getStyle('A4:M4')->applyFromArray([
             'font' => [
                 'bold' => true,
                 'color' => ['rgb' => '2B4C5F'],
@@ -321,30 +322,31 @@ class ExcelService
             $sheet->setCellValue("B$rowNum", $p->name);
             $sheet->setCellValue("C$rowNum", $p->attendance_number ?: '-');
             $sheet->setCellValue("D$rowNum", $p->class_name ?: '-');
-            $sheet->setCellValue("E$rowNum", $p->status === 'completed' ? 'Selesai' : 'Mengerjakan');
-            $sheet->setCellValue("F$rowNum", round($p->score, 1));
-            $sheet->setCellValue("G$rowNum", $p->total_correct);
-            $sheet->setCellValue("H$rowNum", $p->total_answered);
-            $sheet->setCellValue("I$rowNum", $p->total_questions ?: $quiz->questions->count());
-            $sheet->setCellValue("J$rowNum", $p->started_at ? $p->started_at->format('d/m/Y H:i:s') : '-');
-            $sheet->setCellValue("K$rowNum", $p->finished_at ? $p->finished_at->format('d/m/Y H:i:s') : '-');
-            $sheet->setCellValue("L$rowNum", $durationStr);
+            $sheet->setCellValue("E$rowNum", $p->identifier ?: '-');
+            $sheet->setCellValue("F$rowNum", $p->status === 'completed' ? 'Selesai' : 'Mengerjakan');
+            $sheet->setCellValue("G$rowNum", round($p->score, 1));
+            $sheet->setCellValue("H$rowNum", $p->total_correct);
+            $sheet->setCellValue("I$rowNum", $p->total_answered);
+            $sheet->setCellValue("J$rowNum", $p->total_questions ?: $quiz->questions->count());
+            $sheet->setCellValue("K$rowNum", $p->started_at ? $p->started_at->format('d/m/Y H:i:s') : '-');
+            $sheet->setCellValue("L$rowNum", $p->finished_at ? $p->finished_at->format('d/m/Y H:i:s') : '-');
+            $sheet->setCellValue("M$rowNum", $durationStr);
 
             // Row styling
             $sheet->getStyle("A$rowNum")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle("C$rowNum:E$rowNum")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle("F$rowNum:I$rowNum")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle("J$rowNum:L$rowNum")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("C$rowNum:D$rowNum")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("F$rowNum:J$rowNum")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("K$rowNum:M$rowNum")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
             // Zebra striping soft pastel
             if ($rowNum % 2 == 0) {
-                $sheet->getStyle("A$rowNum:L$rowNum")->getFill()->applyFromArray([
+                $sheet->getStyle("A$rowNum:M$rowNum")->getFill()->applyFromArray([
                     'fillType' => Fill::FILL_SOLID,
                     'startColor' => ['rgb' => 'F9FBFC'],
                 ]);
             }
 
-            $sheet->getStyle("A$rowNum:L$rowNum")->getBorders()->getAllBorders()->applyFromArray([
+            $sheet->getStyle("A$rowNum:M$rowNum")->getBorders()->getAllBorders()->applyFromArray([
                 'borderStyle' => Border::BORDER_THIN,
                 'color' => ['rgb' => 'E2E8F0'],
             ]);
@@ -357,14 +359,15 @@ class ExcelService
         $sheet->getColumnDimension('B')->setWidth(28);
         $sheet->getColumnDimension('C')->setWidth(14);
         $sheet->getColumnDimension('D')->setWidth(16);
-        $sheet->getColumnDimension('E')->setWidth(16);
-        $sheet->getColumnDimension('F')->setWidth(14);
-        $sheet->getColumnDimension('G')->setWidth(12);
+        $sheet->getColumnDimension('E')->setWidth(26);
+        $sheet->getColumnDimension('F')->setWidth(16);
+        $sheet->getColumnDimension('G')->setWidth(14);
         $sheet->getColumnDimension('H')->setWidth(12);
         $sheet->getColumnDimension('I')->setWidth(12);
-        $sheet->getColumnDimension('J')->setWidth(20);
+        $sheet->getColumnDimension('J')->setWidth(12);
         $sheet->getColumnDimension('K')->setWidth(20);
-        $sheet->getColumnDimension('L')->setWidth(22);
+        $sheet->getColumnDimension('L')->setWidth(20);
+        $sheet->getColumnDimension('M')->setWidth(22);
 
         $tempPath = Storage::path('hasil_kuis_' . $quiz->code . '_' . date('Ymd_His') . '.xlsx');
         if (!is_dir(dirname($tempPath))) {
